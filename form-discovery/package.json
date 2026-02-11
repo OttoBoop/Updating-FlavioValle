@@ -1,0 +1,36 @@
+{
+  "name": "wix-registration-form-discovery",
+  "version": "1.0.0",
+  "description": "Playwright automation to discover gabineteonline form fields",
+  "type": "module",
+  "main": "discover-gabineteonline-fields.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "npm test -- --watch",
+    "test:coverage": "npm test -- --coverage",
+    "discover": "node discover-gabineteonline-fields.js",
+    "lint": "echo 'No linter configured yet'",
+    "format": "echo 'No formatter configured yet'"
+  },
+  "keywords": [
+    "playwright",
+    "form-discovery",
+    "wix",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@playwright/test": "^1.58.2",
+    "chalk": "^5.6.2",
+    "dotenv": "^16.6.1",
+    "inquirer": "^9.3.8",
+    "playwright": "^1.40.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^29.7.0"
+  }
+}

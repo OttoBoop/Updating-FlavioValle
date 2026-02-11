@@ -1,0 +1,28 @@
+# Environment variables
+.env
+credentials.encrypted
+
+# Dependencies
+node_modules/
+
+# Output files
+form-discovery/output/*.json
+form-discovery/output/*.png
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

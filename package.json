@@ -1,0 +1,14 @@
+{
+  "name": "wix-registration-system",
+  "version": "1.0.0",
+  "description": "Wix registration gate for WhatsApp contact at flaviovalle.com",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules ./form-discovery/node_modules/jest/bin/jest.js --config=jest.config.js",
+    "test:watch": "npm test -- --watch",
+    "test:coverage": "npm test -- --coverage"
+  },
+  "keywords": ["wix", "registration", "automation"],
+  "author": "",
+  "license": "ISC"
+}

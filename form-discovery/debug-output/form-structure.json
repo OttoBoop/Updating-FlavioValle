@@ -1,0 +1,207 @@
+[
+  {
+    "formIndex": 0,
+    "formHTML": "<form id=\"form\" name=\"form\" action=\"index.php\" onkeydown=\"if(event.keyCode == 13) logar(1);\" method=\"post\" autocomplete=\"off\">\n\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t<div class=\"wrap-login-form-fields-ipt\">\n\t\t\t\t\t\t\t<input id=\"txtusuario\" name=\"txtusuario\" type=\"text\" placeholder=\"Usuário\" onkeyup=\"javascript:naoPermiteAcento(this);\" maxlength=\"50\" onfocus=\"$('#txtusuario').attr('style', '');\" onkeypress=\"checar_caps_lock(event);\" autocomplete=\"off\" style=\"\">\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\t\t\t<div class=\"wrap-login-form-fields-ipt\">\n\t\t\t\t\t\t\t<input type=\"password\" autocomplete=\"current-password\" id=\"current-password\" style=\"opacity: 0;position: absolute;pointer-events: none;width: 0;height: 0;\" tabindex=\"-1\">\n\t\t\t\t\t\t\t<input id=\"txtsenha\" name=\"txtsenha\" type=\"password\" placeholder=\"Senha\" onkeyup=\"javascript:naoPermiteAcento(this);\" onfocus=\"$('#txtsenha').attr('style', '');\" onkeypress=\"BloqueiaSenha(event);checar_caps_lock(event);\" maxlength=\"16\" autocomplete=\"off\">\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"wrap-login-form-fields-ipt\">\n\t\t\t\t\t\t\t<span id=\"divcaps\" name=\"divcaps\" style=\"display:none;color:red;font-size:12px;\">\n\t\t\t\t\t\t\t\tO Caps Lock está ativado!<br>\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"wrap-login-form-fields-ipt\">\n\t\t\t\t\t\t\t<a href=\"javascript:PopupCliqueAqui('recuperarsenha.php');\">Esqueci minha senha</a>\n\t\t\t\t\t\t\t<!-- <a href=\"https://api.whatsapp.com/send?phone=5511938015036&text=Esqueci%20minha%20senha!\" target=\"_blank\">Esqueci minha senha</a> -->\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\t\t\t<div class=\"cf-turnstile\" data-sitekey=\"0x4AAAAAAA6QJue2Fkes3Jsu\" data-theme=\"light\"><div><input type=\"hidden\" name=\"cf-turnstile-response\" id=\"cf-chl-widget-72hly_response\"></div></div>\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t<div class=\"wrap-login-form-fields-ipt\">\n\t\t\t\t\t\t\t<!-- <a href=\"appgabineteonline://sgdi.com.br/\" class=\"btn btn-login\">CLIQUE AQUI</a> -->\n\t\t\t\t\t\t\t<button type=\"button\" onclick=\"javascript:logar(1);\" class=\"btn btn-login\">Entrar</button>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<input type=\"hidden\" name=\"tiporecaptcha\" id=\"tiporecaptcha\" value=\"1\">\n\t\t\t\t\t\t\n\t\t\t\t\t</form>",
+    "inputs": [
+      {
+        "tagName": "input",
+        "type": "text",
+        "name": "txtusuario",
+        "id": "txtusuario",
+        "className": "",
+        "placeholder": "Usuário",
+        "autocomplete": "off",
+        "required": false,
+        "disabled": false,
+        "visible": true,
+        "value": "",
+        "attributes": [
+          {
+            "name": "id",
+            "value": "txtusuario"
+          },
+          {
+            "name": "name",
+            "value": "txtusuario"
+          },
+          {
+            "name": "type",
+            "value": "text"
+          },
+          {
+            "name": "placeholder",
+            "value": "Usuário"
+          },
+          {
+            "name": "onkeyup",
+            "value": "javascript:naoPermiteAcento(this);"
+          },
+          {
+            "name": "maxlength",
+            "value": "50"
+          },
+          {
+            "name": "onfocus",
+            "value": "$('#txtusuario').attr('style', '');"
+          },
+          {
+            "name": "onkeypress",
+            "value": "checar_caps_lock(event);"
+          },
+          {
+            "name": "autocomplete",
+            "value": "off"
+          },
+          {
+            "name": "style",
+            "value": ""
+          }
+        ]
+      },
+      {
+        "tagName": "input",
+        "type": "password",
+        "name": "",
+        "id": "current-password",
+        "className": "",
+        "placeholder": "",
+        "autocomplete": "current-password",
+        "required": false,
+        "disabled": false,
+        "visible": true,
+        "value": "",
+        "attributes": [
+          {
+            "name": "type",
+            "value": "password"
+          },
+          {
+            "name": "autocomplete",
+            "value": "current-password"
+          },
+          {
+            "name": "id",
+            "value": "current-password"
+          },
+          {
+            "name": "style",
+            "value": "opacity: 0;position: absolute;pointer-events: none;width: 0;height: 0;"
+          },
+          {
+            "name": "tabindex",
+            "value": "-1"
+          }
+        ]
+      },
+      {
+        "tagName": "input",
+        "type": "password",
+        "name": "txtsenha",
+        "id": "txtsenha",
+        "className": "",
+        "placeholder": "Senha",
+        "autocomplete": "off",
+        "required": false,
+        "disabled": false,
+        "visible": true,
+        "value": "",
+        "attributes": [
+          {
+            "name": "id",
+            "value": "txtsenha"
+          },
+          {
+            "name": "name",
+            "value": "txtsenha"
+          },
+          {
+            "name": "type",
+            "value": "password"
+          },
+          {
+            "name": "placeholder",
+            "value": "Senha"
+          },
+          {
+            "name": "onkeyup",
+            "value": "javascript:naoPermiteAcento(this);"
+          },
+          {
+            "name": "onfocus",
+            "value": "$('#txtsenha').attr('style', '');"
+          },
+          {
+            "name": "onkeypress",
+            "value": "BloqueiaSenha(event);checar_caps_lock(event);"
+          },
+          {
+            "name": "maxlength",
+            "value": "16"
+          },
+          {
+            "name": "autocomplete",
+            "value": "off"
+          }
+        ]
+      },
+      {
+        "tagName": "input",
+        "type": "hidden",
+        "name": "cf-turnstile-response",
+        "id": "cf-chl-widget-72hly_response",
+        "className": "",
+        "placeholder": "",
+        "autocomplete": "",
+        "required": false,
+        "disabled": false,
+        "visible": false,
+        "value": "",
+        "attributes": [
+          {
+            "name": "type",
+            "value": "hidden"
+          },
+          {
+            "name": "name",
+            "value": "cf-turnstile-response"
+          },
+          {
+            "name": "id",
+            "value": "cf-chl-widget-72hly_response"
+          }
+        ]
+      },
+      {
+        "tagName": "input",
+        "type": "hidden",
+        "name": "tiporecaptcha",
+        "id": "tiporecaptcha",
+        "className": "",
+        "placeholder": "",
+        "autocomplete": "",
+        "required": false,
+        "disabled": false,
+        "visible": false,
+        "value": "1",
+        "attributes": [
+          {
+            "name": "type",
+            "value": "hidden"
+          },
+          {
+            "name": "name",
+            "value": "tiporecaptcha"
+          },
+          {
+            "name": "id",
+            "value": "tiporecaptcha"
+          },
+          {
+            "name": "value",
+            "value": "1"
+          }
+        ]
+      }
+    ]
+  }
+]

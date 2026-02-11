@@ -1,0 +1,146 @@
+[
+  {
+    "name": "type=password",
+    "selector": "input[type=\"password\"]",
+    "found": true,
+    "count": 2,
+    "elementInfo": {
+      "tagName": "INPUT",
+      "type": "password",
+      "name": "",
+      "id": "current-password",
+      "placeholder": "",
+      "visible": true,
+      "enabled": true,
+      "value": ""
+    }
+  },
+  {
+    "name": "placeholder*=enha",
+    "selector": "input[placeholder*=\"enha\"]",
+    "found": true,
+    "count": 1,
+    "elementInfo": {
+      "tagName": "INPUT",
+      "type": "password",
+      "name": "txtsenha",
+      "id": "txtsenha",
+      "placeholder": "Senha",
+      "visible": true,
+      "enabled": true,
+      "value": ""
+    }
+  },
+  {
+    "name": "placeholder*=senha",
+    "selector": "input[placeholder*=\"senha\"]",
+    "found": false,
+    "count": 0
+  },
+  {
+    "name": "placeholder*=password",
+    "selector": "input[placeholder*=\"password\"]",
+    "found": false,
+    "count": 0
+  },
+  {
+    "name": "name=password",
+    "selector": "input[name=\"password\"]",
+    "found": false,
+    "count": 0
+  },
+  {
+    "name": "name=senha",
+    "selector": "input[name=\"senha\"]",
+    "found": false,
+    "count": 0
+  },
+  {
+    "name": "name*=pass",
+    "selector": "input[name*=\"pass\"]",
+    "found": false,
+    "count": 0
+  },
+  {
+    "name": "id*=password",
+    "selector": "input[id*=\"password\"]",
+    "found": true,
+    "count": 1,
+    "elementInfo": {
+      "tagName": "INPUT",
+      "type": "password",
+      "name": "",
+      "id": "current-password",
+      "placeholder": "",
+      "visible": true,
+      "enabled": true,
+      "value": ""
+    }
+  },
+  {
+    "name": "id*=senha",
+    "selector": "input[id*=\"senha\"]",
+    "found": true,
+    "count": 1,
+    "elementInfo": {
+      "tagName": "INPUT",
+      "type": "password",
+      "name": "txtsenha",
+      "id": "txtsenha",
+      "placeholder": "Senha",
+      "visible": true,
+      "enabled": true,
+      "value": ""
+    }
+  },
+  {
+    "name": "autocomplete=current-password",
+    "selector": "input[autocomplete=\"current-password\"]",
+    "found": true,
+    "count": 1,
+    "elementInfo": {
+      "tagName": "INPUT",
+      "type": "password",
+      "name": "",
+      "id": "current-password",
+      "placeholder": "",
+      "visible": true,
+      "enabled": true,
+      "value": ""
+    }
+  },
+  {
+    "name": "class*=password",
+    "selector": "input[class*=\"password\"]",
+    "found": false,
+    "count": 0
+  },
+  {
+    "name": "class*=senha",
+    "selector": "input[class*=\"senha\"]",
+    "found": false,
+    "count": 0
+  },
+  {
+    "name": "second-input",
+    "selector": "form input:nth-of-type(2)",
+    "found": true,
+    "count": 1,
+    "elementInfo": {
+      "tagName": "INPUT",
+      "type": "password",
+      "name": "txtsenha",
+      "id": "txtsenha",
+      "placeholder": "Senha",
+      "visible": true,
+      "enabled": true,
+      "value": ""
+    }
+  },
+  {
+    "name": "after-username",
+    "selector": "input[type=\"text\"] + input, input[type=\"text\"] ~ input",
+    "found": false,
+    "count": 0
+  }
+]
