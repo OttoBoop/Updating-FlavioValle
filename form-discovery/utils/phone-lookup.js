@@ -10,6 +10,23 @@
 import { validatePhone } from './phone-validation.js';
 import { queryByCelular } from './wix-db-operations.js';
 
+// Route constants
+export const ROUTES = {
+  REGISTER: 'register',
+  WELCOME_BACK: 'welcome-back',
+  INVALID: 'invalid'
+};
+
+// Action constants
+export const ACTIONS = {
+  SHOW_FORM: 'showForm',
+  SHOW_WELCOME: 'showWelcome',
+  SHOW_ERROR: 'showError'
+};
+
+// WhatsApp contact URL
+const WHATSAPP_URL = 'https://wa.me/5521978919938';
+
 /**
  * Main lookup function - validates phone and queries DB
  * @param {string} phone - Raw phone input from user (any format)
@@ -22,7 +39,7 @@ export async function lookupPhone(phone, wixData) {
 
   if (!validation.valid) {
     return {
-      route: 'invalid',
+      route: ROUTES.INVALID,
       error: validation.error
     };
   }
@@ -32,13 +49,13 @@ export async function lookupPhone(phone, wixData) {
 
   if (user) {
     return {
-      route: 'welcome-back',
-      user: user
+      route: ROUTES.WELCOME_BACK,
+      user
     };
   }
 
   return {
-    route: 'register'
+    route: ROUTES.REGISTER
   };
 }
 
@@ -48,15 +65,8 @@ export async function lookupPhone(phone, wixData) {
  * @returns {string} - Welcome message using apelido (or nomeCompleto as fallback)
  */
 export function getWelcomeMessage(user) {
-  if (user.apelido) {
-    return `Bem-vindo de volta, ${user.apelido}!`;
-  }
-
-  if (user.nomeCompleto) {
-    return `Bem-vindo de volta, ${user.nomeCompleto}!`;
-  }
-
-  return 'Bem-vindo de volta!';
+  const name = user.apelido || user.nomeCompleto;
+  return name ? `Bem-vindo de volta, ${name}!` : 'Bem-vindo de volta!';
 }
 
 /**
@@ -65,26 +75,30 @@ export function getWelcomeMessage(user) {
  * @returns {Object} - Action object describing what the UI should do
  */
 export function getRouteAction(lookupResult) {
-  if (lookupResult.route === 'register') {
-    return {
-      action: 'showForm',
-      prefill: {}
-    };
-  }
+  const { route } = lookupResult;
 
-  if (lookupResult.route === 'welcome-back') {
-    return {
-      action: 'showWelcome',
-      message: getWelcomeMessage(lookupResult.user),
-      whatsappUrl: 'https://wa.me/5521978919938',
-      showUpdateOption: true
-    };
-  }
+  switch (route) {
+    case ROUTES.REGISTER:
+      return {
+        action: ACTIONS.SHOW_FORM,
+        prefill: {}
+      };
 
-  if (lookupResult.route === 'invalid') {
-    return {
-      action: 'showError',
-      message: lookupResult.error
-    };
+    case ROUTES.WELCOME_BACK:
+      return {
+        action: ACTIONS.SHOW_WELCOME,
+        message: getWelcomeMessage(lookupResult.user),
+        whatsappUrl: WHATSAPP_URL,
+        showUpdateOption: true
+      };
+
+    case ROUTES.INVALID:
+      return {
+        action: ACTIONS.SHOW_ERROR,
+        message: lookupResult.error
+      };
+
+    default:
+      throw new Error(`Unknown route: ${route}`);
   }
 }
