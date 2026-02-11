@@ -7,6 +7,30 @@
 
 const COLLECTION_NAME = 'Registros';
 
+// Sync status constants
+export const SYNC_STATUS = {
+  PENDING: 'pending',
+  SYNCED: 'synced',
+  FAILED: 'failed',
+};
+
+// System field defaults
+const SYSTEM_DEFAULTS = {
+  syncStatus: SYNC_STATUS.PENDING,
+  syncError: null,
+  syncAttempts: 0,
+  gabineteId: null,
+  lastSyncAt: null,
+};
+
+/**
+ * Get current timestamp in ISO format
+ * @returns {string} ISO 8601 timestamp
+ */
+function getCurrentTimestamp() {
+  return new Date().toISOString();
+}
+
 /**
  * Get the Registros collection schema definition
  * @returns {Object} Schema with required, optional, system fields, types, and indexes
@@ -97,11 +121,7 @@ export async function insertRegistration(wixData, registration) {
   // Build complete record with system defaults
   const record = {
     ...registration,
-    syncStatus: 'pending',
-    syncError: null,
-    syncAttempts: 0,
-    gabineteId: null,
-    lastSyncAt: null,
+    ...SYSTEM_DEFAULTS,
   };
 
   // Insert into collection
@@ -141,15 +161,15 @@ export async function updateSyncStatus(wixData, registrationId, status, gabinete
   const updates = {
     _id: registrationId,
     syncStatus: status,
-    lastSyncAt: new Date().toISOString(),
+    lastSyncAt: getCurrentTimestamp(),
   };
 
-  if (status === 'synced' && gabineteId) {
+  if (status === SYNC_STATUS.SYNCED && gabineteId) {
     updates.gabineteId = gabineteId;
     updates.syncError = null;
   }
 
-  if (status === 'failed' && errorMessage) {
+  if (status === SYNC_STATUS.FAILED && errorMessage) {
     updates.syncError = errorMessage;
   }
 
@@ -170,7 +190,7 @@ export async function incrementSyncAttempts(wixData, registrationId) {
   const updates = {
     _id: registrationId,
     syncAttempts: (current.syncAttempts || 0) + 1,
-    lastSyncAt: new Date().toISOString(),
+    lastSyncAt: getCurrentTimestamp(),
   };
 
   return wixData.update(COLLECTION_NAME, updates);
