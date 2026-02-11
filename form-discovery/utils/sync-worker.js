@@ -5,7 +5,8 @@
 import { mapWixToGabinete } from './velo-field-mapper.js';
 import { login, submitRegistration } from './velo-gabinete-client.js';
 
-// Retry configuration
+// Configuration constants
+const COLLECTION_NAME = 'Registros';
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000; // 1 second
 const DELAY_MULTIPLIER = 2; // Exponential backoff
@@ -29,18 +30,56 @@ function generateGabineteId() {
 }
 
 /**
+ * Mark a record as failed with error message
+ * @param {Object} wixData - Wix Data API instance
+ * @param {string} recordId - Record ID
+ * @param {string} errorMessage - Error message to store
+ * @param {number} [attempts] - Number of attempts made (optional)
+ */
+function markRecordAsFailed(wixData, recordId, errorMessage, attempts = null) {
+  const update = {
+    _id: recordId,
+    syncStatus: 'failed',
+    syncError: errorMessage,
+    lastSyncAt: Date.now()
+  };
+
+  if (attempts !== null) {
+    update.syncAttempts = attempts;
+  }
+
+  wixData.update(COLLECTION_NAME, update);
+}
+
+/**
  * Sync a single record from Wix to gabineteonline with retry logic
+ *
+ * Process:
+ * 1. Fetch record from Wix DB
+ * 2. Login to gabineteonline (fail fast on auth errors)
+ * 3. Map Wix fields → gabineteonline fields
+ * 4. Submit with up to 3 retry attempts (exponential backoff: 1s, 2s, 4s)
+ * 5. Update record status: pending → synced | failed
+ *
  * @param {string} recordId - Wix record _id
  * @param {Object} wixData - Wix Data API instance
  * @param {Object} wixFetch - Wix Fetch API instance
  * @param {string} username - Gabineteonline username
  * @param {string} password - Gabineteonline password
  * @returns {Promise<{success: boolean, recordId: string, error?: string}>}
+ *
+ * @example
+ * const result = await syncSingleRecord('abc123', wixData, wixFetch, 'user', 'pass');
+ * if (result.success) {
+ *   console.log('Synced record:', result.recordId);
+ * } else {
+ *   console.error('Sync failed:', result.error);
+ * }
  */
 export async function syncSingleRecord(recordId, wixData, wixFetch, username, password) {
   try {
     // Step 1: Get record from Wix DB
-    const record = wixData.get('Registros', recordId);
+    const record = wixData.get(COLLECTION_NAME, recordId);
     if (!record) {
       return { success: false, recordId, error: 'Record not found' };
     }
@@ -50,14 +89,10 @@ export async function syncSingleRecord(recordId, wixData, wixFetch, username, pa
     try {
       loginResult = await login(username, password, wixFetch);
     } catch (error) {
-      // Login failed - mark as failed immediately
-      wixData.update('Registros', {
-        _id: recordId,
-        syncStatus: 'failed',
-        syncError: `Login failed: ${error.message}`,
-        lastSyncAt: Date.now()
-      });
-      return { success: false, recordId, error: `Login failed: ${error.message}` };
+      // Login failed - mark as failed immediately (no retries on auth errors)
+      const errorMsg = `Login failed: ${error.message}`;
+      markRecordAsFailed(wixData, recordId, errorMsg);
+      return { success: false, recordId, error: errorMsg };
     }
 
     const { cookies } = loginResult;
@@ -67,21 +102,18 @@ export async function syncSingleRecord(recordId, wixData, wixFetch, username, pa
     try {
       mappedData = mapWixToGabinete(record);
     } catch (error) {
-      wixData.update('Registros', {
-        _id: recordId,
-        syncStatus: 'failed',
-        syncError: `Mapping failed: ${error.message}`,
-        lastSyncAt: Date.now()
-      });
-      return { success: false, recordId, error: `Mapping failed: ${error.message}` };
+      // Mapping failed - mark as failed immediately
+      const errorMsg = `Mapping failed: ${error.message}`;
+      markRecordAsFailed(wixData, recordId, errorMsg);
+      return { success: false, recordId, error: errorMsg };
     }
 
-    // Step 4: Submit with retry logic
+    // Step 4: Submit with retry logic (exponential backoff)
     let lastError = null;
 
     for (let attempts = 1; attempts <= MAX_RETRIES; attempts++) {
       // Update attempt counter before each attempt
-      wixData.update('Registros', {
+      wixData.update(COLLECTION_NAME, {
         _id: recordId,
         syncAttempts: attempts
       });
@@ -93,7 +125,7 @@ export async function syncSingleRecord(recordId, wixData, wixFetch, username, pa
           // Success! Generate gabinete ID and update record
           const gabineteId = generateGabineteId();
 
-          wixData.update('Registros', {
+          wixData.update(COLLECTION_NAME, {
             _id: recordId,
             syncStatus: 'synced',
             syncAttempts: attempts,
@@ -103,7 +135,7 @@ export async function syncSingleRecord(recordId, wixData, wixFetch, username, pa
 
           return { success: true, recordId };
         } else {
-          // Submission failed
+          // Submission failed - record error and potentially retry
           lastError = result.error || 'Unknown error';
         }
       } catch (error) {
@@ -117,47 +149,45 @@ export async function syncSingleRecord(recordId, wixData, wixFetch, username, pa
       }
     }
 
-    // All retries exhausted
-    wixData.update('Registros', {
-      _id: recordId,
-      syncStatus: 'failed',
-      syncError: lastError,
-      syncAttempts: MAX_RETRIES,
-      lastSyncAt: Date.now()
-    });
-
+    // All retries exhausted - mark as failed
+    markRecordAsFailed(wixData, recordId, lastError, MAX_RETRIES);
     return { success: false, recordId, error: lastError };
 
   } catch (error) {
-    // Unexpected error
-    wixData.update('Registros', {
-      _id: recordId,
-      syncStatus: 'failed',
-      syncError: error.message,
-      lastSyncAt: Date.now()
-    });
-
+    // Unexpected error - mark as failed
+    markRecordAsFailed(wixData, recordId, error.message);
     return { success: false, recordId, error: error.message };
   }
 }
 
 /**
  * Batch sync all pending records from Wix to gabineteonline
+ *
+ * Queries all records with syncStatus === 'pending' and syncs them sequentially.
+ * Each record is synced independently with its own retry logic.
+ *
  * @param {Object} wixData - Wix Data API instance
  * @param {Object} wixFetch - Wix Fetch API instance
  * @param {string} username - Gabineteonline username
  * @param {string} password - Gabineteonline password
  * @returns {Promise<Array<{success: boolean, recordId: string, error?: string}>>}
+ *   Array of results, one per record
+ *
+ * @example
+ * const results = await syncPendingRecords(wixData, wixFetch, 'user', 'pass');
+ * const successful = results.filter(r => r.success).length;
+ * const failed = results.filter(r => !r.success).length;
+ * console.log(`Synced ${successful}, failed ${failed}`);
  */
 export async function syncPendingRecords(wixData, wixFetch, username, password) {
   // Query all pending records
-  const queryResult = wixData.query('Registros')
+  const queryResult = wixData.query(COLLECTION_NAME)
     .eq('syncStatus', 'pending')
     .find();
 
   const pendingRecords = queryResult.items;
 
-  // Sync each record sequentially
+  // Sync each record sequentially (avoids overwhelming the server)
   const results = [];
   for (const record of pendingRecords) {
     const result = await syncSingleRecord(record._id, wixData, wixFetch, username, password);
