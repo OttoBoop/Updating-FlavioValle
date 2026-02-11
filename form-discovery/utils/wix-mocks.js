@@ -96,9 +96,10 @@ export function createWixFetchMock(responses = []) {
     async fetch(url, options = {}) {
       calls.push({ url, options });
 
-      const response = responses.find(r => url.includes(r.urlPattern));
+      // Find matching responses (check in reverse order - last defined wins)
+      const matchingResponses = responses.filter(r => url.includes(r.urlPattern));
 
-      if (!response) {
+      if (matchingResponses.length === 0) {
         return {
           ok: false,
           status: 404,
@@ -111,6 +112,9 @@ export function createWixFetchMock(responses = []) {
           headers: {}
         };
       }
+
+      // Use the last matching response (most recently defined wins)
+      const response = matchingResponses[matchingResponses.length - 1];
 
       return {
         ok: response.status < 400,
