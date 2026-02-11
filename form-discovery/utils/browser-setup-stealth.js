@@ -34,8 +34,9 @@ export async function loginToGabineteWithStealth(credentials, options = {}) {
       await page.screenshot({ path: 'output/01-landing-page.png', fullPage: true });
 
       // Find and fill login form
-      const usernameField = page.locator('input[type="text"], input[name="username"], input[name="email"], input[placeholder*="suário"]').first();
-      const passwordField = page.locator('input[type="password"], input[placeholder*="enha"]').first();
+      // Note: Use specific selectors to avoid the invisible decoy field (id="current-password")
+      const usernameField = page.locator('input[name="txtusuario"], input[id="txtusuario"]').first();
+      const passwordField = page.locator('input[name="txtsenha"], input[id="txtsenha"]').first();
 
       // Wait for fields to be visible and fill them
       await usernameField.waitFor({ state: 'visible', timeout });
