@@ -226,7 +226,7 @@ flaviovalle.com
 **Tasks:**
 | ID | Task | Dependencies | Effort | Status |
 |----|------|--------------|--------|--------|
-| F3-T1 | Build one-time Playwright script to duplicate site and enable Velo | F1-T2 | M | ⬜ |
+| F3-T1 | Build one-time Playwright script to duplicate site and enable Velo | F1-T2 | M | ✅ Done |
 | F3-T2 | Install Wix CLI, authenticate (`wix login`), verify `wix dev` works | F3-T1 | S | ⬜ |
 | F3-T3 | Create `Registros` DB collection via Wix REST API (schema, indexes, permissions) | F3-T2 | M | ⬜ |
 | F3-T4 | Build Wix API mock library (wix-data, wix-fetch, wix-location, wix-secrets) for Jest | None | M | ✅ Done |
@@ -476,7 +476,7 @@ F4-T1 ─── DONE
 - [x] F4-T2: Phone validation ✅ (21 tests)
 - [x] F4-T3: Email validation ✅ (41 tests)
 - [x] F4-T4: Suspicious data detection ✅ (51 tests, CPF algorithm)
-- [ ] F3-T1: Dashboard automation script (one-time)
+- [x] F3-T1: Dashboard automation script ✅ (13 tests, needs manual run)
 - [ ] F3-T2: CLI setup + auth
 - [ ] F3-T3: DB collection via REST API
 
@@ -558,3 +558,4 @@ F4-T1 ─── DONE
 | 2026-02-11 | F4-T4 complete via TDD: suspicious-data.js with CPF mod-11 check-digit algorithm. 51 tests passing (validateCPF + detectSuspicious). | Claude Opus 4.6 |
 | 2026-02-11 | F4-T2 complete via TDD: phone-validation.js (validatePhone + normalizePhone). 21 tests passing. | Claude Opus 4.6 |
 | 2026-02-11 | F4-T3 complete via TDD: email-validation.js (validateEmail with normalization, disposable detection, Brazilian TLDs). 41 tests passing. | Claude Opus 4.6 |
+| 2026-02-11 | F3-T1 complete via TDD: wix-dashboard-automator.js (loginToWix, duplicateSite, enableVelo, runSetup). 13 tests passing. Needs manual run to execute against real Wix Dashboard. | Claude Opus 4.6 |
