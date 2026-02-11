@@ -9,6 +9,7 @@
 - Site exploration 2026-02-11 (live site structure, WhatsApp mapping)
 - Deep exploration 2026-02-12 (/participe form mapping, Velo API research)
 - Discovery session 2026-02-12 (v3 — single-page, live previews, sync strategy)
+- Dashboard scraper session 2026-02-11 (CMS, Developer Tools, session persistence)
 
 ---
 
@@ -289,7 +290,7 @@ Response format:
 |----|------|--------------|--------|--------|
 | F5-T1 | Enhance `/participe` form: rename nome→"Nome Completo", add "Como gostaria de ser chamado?" (apelido), add all gabineteonline fields as hidden-by-default toggleable sections | F3-T2 | L | ✅ Done (20 tests) |
 | F5-T2 | Add phone lookup logic: on page load or phone input blur, query Registros DB. If returning → show welcome back state. If new → show full form | F3-T2, F4-T2 | M | ✅ Done (17 tests) |
-| F5-T3 | Add form submission handler: validate → save to Wix DB with syncStatus:"pending" → redirect to WhatsApp | F5-T1, F5-T2, F4-T3, F4-T4 | M | ⬜ |
+| F5-T3 | Add form submission handler: validate → save to Wix DB with syncStatus:"pending" → redirect to WhatsApp | F5-T1, F5-T2, F4-T3, F4-T4 | M | ✅ Done (22 tests) |
 | F5-T4 | Change WhatsApp widget link to `/participe` in Wix Editor. Add masterPage.js code for returning-user bypass (registered users go directly to WhatsApp) | F5-T2 | M | ⬜ |
 
 **Tests:**
@@ -297,10 +298,10 @@ Response format:
 - [x] Test: Registration form validates required fields (Nome Completo, Apelido, Celular)
 - [x] Test: "Nome Completo" + "Sobrenome" concatenated before save
 - [x] Test: Hidden fields can be toggled visible via code flag
-- [ ] Test: Form data saved to Wix DB with syncStatus: "pending"
-- [ ] Test: WhatsApp redirect fires after successful registration
+- [x] Test: Form data saved to Wix DB with syncStatus: "pending"
+- [x] Test: WhatsApp redirect fires after successful registration
 - [x] Test: Returning user sees welcome message with their apelido
-- [ ] Test: Error state preserves form data for retry
+- [x] Test: Error state preserves form data for retry
 
 ### 4.4 Registros DB Schema (for F3-T2 and F5)
 
@@ -415,6 +416,7 @@ tests/
 │   ├── velo-gabinete-client.test.js  ✅ 16 tests (F4-T5)
 │   ├── participe-form-config.test.js ✅ 20 tests (F5-T1)
 │   ├── phone-lookup.test.js          ✅ 17 tests (F5-T2)
+│   ├── form-submission-handler.test.js ✅ 22 tests (F5-T3)
 │   └── wix-db-operations.test.js     ✅ 17 tests (F3-T2)
 │
 ├── integration/    # Against preview URL or real services
@@ -429,7 +431,7 @@ tests/
     └── registration-flow.md          ⬜ (F7-T1)
 ```
 
-**Current status:** 323 unit tests passing (committed).
+**Current status:** 345 unit tests passing (committed).
 
 ### 5.2 TDD Checklist (Per Task)
 
@@ -523,7 +525,7 @@ Total: 286 unit tests passing
 **Goal:** Transform /participe into full registration hub
 - [x] F5-T1: Enhance form (Nome Completo, Apelido, hidden toggleable fields) — 20 tests
 - [x] F5-T2: Phone lookup (returning user detection) — 17 tests
-- [ ] F5-T3: Form submission handler (validate → save → redirect WhatsApp)
+- [x] F5-T3: Form submission handler (validate → save → redirect WhatsApp) — 22 tests
 - [ ] F5-T4: WhatsApp widget link change + masterPage.js for registered-user bypass
 
 ### Phase 5: Background Sync
@@ -589,6 +591,8 @@ Total: 286 unit tests passing
 | 2026-02-12 | **v3 REWRITE:** Single-page architecture on /participe. Live site with previews (not dev site). All gabineteonline fields with hidden toggles. "Nome Completo" + "Como gostaria de ser chamado?" (apelido). Batch sync (hours). Try Wix .jsw first, Render proxy fallback. xajax protocol corrects F2 assumptions. Footer redesign as design proposal only (F8) | Claude Opus 4.6 |
 | 2026-02-11 | Wave 2: F3-T2 (Registros DB ops, 17 tests) + F4-T6 (sync worker, 14 tests). 286 tests passing | Claude Opus 4.6 |
 | 2026-02-11 | Wave 3: F5-T1 (form config, 20 tests) + F5-T2 (phone lookup, 17 tests). 323 tests passing | Claude Opus 4.6 |
+| 2026-02-11 | Dashboard exploration: site ID discovered, CMS mapped (0 custom/12 form collections), Developer Tools explored, session saved. Added sections 13.1-13.7 | Claude Opus 4.6 |
+| 2026-02-11 | F5-T3 (form submission handler, 22 tests). WhatsApp URL extracted to shared constants.js. 345 tests passing | Claude Opus 4.6 |
 
 ---
 
@@ -648,9 +652,9 @@ Total: 286 unit tests passing
 - [x] Secrets Manager (wix-secrets)
 
 **Still needs exploration during F3-T1:**
-- [ ] Velo Dev Mode status on live site
-- [ ] Existing Data Collections
-- [ ] Secrets Manager configuration
+- [ ] Velo Dev Mode status on live site (need to open Editor via "Edit Site" button)
+- [x] Existing Data Collections — **0 custom, 12 Wix Form collections** (see 11.7)
+- [ ] Secrets Manager configuration (URL known, not yet opened)
 - [ ] Page structure in editor (can we add Velo code to /participe?)
 
 ### 11.6 `/participe` Page — Deep Form Mapping
@@ -691,3 +695,124 @@ Total: 286 unit tests passing
 - More complex, may feel intrusive
 
 **Recommendation:** Option A or B. Pending design team discussion.
+
+---
+
+## 13. Wix Dashboard Exploration (2026-02-11, scraper session)
+
+### 13.1 Access & Session
+
+| Item | Value |
+|------|-------|
+| **Site ID** | `3d861f70-c919-4aa5-8420-e7643606ce2b` |
+| **Dashboard URL** | `https://manage.wix.com/dashboard/3d861f70-c919-4aa5-8420-e7643606ce2b` |
+| **Session saved** | `general_scraper/data/wix_storage_state.json` (2026-02-11T14:33:52Z) |
+| **Profile** | `general_scraper/profiles/flaviovalle.yaml` (updated with all URLs + commands) |
+| **Sites on account** | 2: **flaviovalle-dev** (not published), **Flávio Valle** (premium, live) |
+
+### 13.2 CMS / Data Collections
+
+**Your Collections (custom):** 0 — none exist yet. Must create "Registros" manually.
+
+**Wix Form Collections (auto-generated):** 12 total
+
+| Collection | Items | Notes |
+|-----------|-------|-------|
+| Denuncie imóveis em situação irregular... | 274 | Real form submissions |
+| Faixa extra para ciclistas na auto estr... | 109 | Real form submissions |
+| Registration Form | **0 (empty)** | Wrong schema: First name, Email, "How many will...", Last name — NOT /participe |
+| Contact 2 (x2) | ? | Two separate collections with same name |
+| (others) | ? | Scrolled past, not documented |
+
+**Key insight:** "Registration Form" collection has the wrong schema — it does NOT correspond to the `/participe` form. We need to create a **new custom "Registros" collection** with the correct schema (nomeCompleto, sobrenome, celular, email, bairro, observacao, syncStatus, gabineteId, etc).
+
+### 13.3 Developer Tools
+
+**Dashboard sidebar** (bottom section):
+```
+Developer Tools
+├── Logging Tools
+│   ├── Wix Logs          ← real-time code execution logs
+│   └── Advanced Log Tools ← Google Cloud Operations integration
+├── Monitoring
+└── Secrets Manager        ← store gabineteonline credentials here
+```
+
+**Wix Logs page** features:
+- Real-time log stream with level/stream filters
+- **"Preview in Editor"** link — opens Wix Editor in preview mode (new tab)
+- **"Open Live Site"** link — opens the live flaviovalle.com
+- Logs from Preview mode, test site, or live site
+
+**Not yet explored:**
+- Secrets Manager (URL: `.../developer-tools/secrets-manager`)
+- Monitoring dashboard
+
+### 13.4 Dashboard Sidebar — Full Structure
+
+```
+Home
+AI Agents (NEW)
+Sales
+Catalog
+Blog
+Apps (1)
+Site & Mobile App
+Marketing
+Getting Paid
+Inbox (10)
+Customers & Leads
+Analytics
+Automations
+Settings
+CMS
+Developer Tools
+  Logging Tools
+    Wix Logs
+    Advanced Log Tools
+  Monitoring
+  Secrets Manager
+─────────────────
+[Edit Site]        ← bottom-left button, opens Wix Editor
+```
+
+### 13.5 Entry Points to Wix Editor
+
+Three ways to open the editor (all require authentication):
+
+1. **"Edit Site" button** — bottom-left of dashboard sidebar
+2. **"Preview in Editor" link** — on Wix Logs page (opens preview mode)
+3. **Direct URL** — `https://editor.wix.com` (generic, redirects to site editor)
+
+### 13.6 Scraper Quick Start for Next Session
+
+```bash
+# 1. Start with saved session (skip login)
+cd general_scraper && python interactive_driver.py \
+  --url "https://manage.wix.com/dashboard/3d861f70-c919-4aa5-8420-e7643606ce2b" \
+  --mode storage_state \
+  --storage-state data/wix_storage_state.json
+
+# 2. Key navigation commands (append to commands.jsonl):
+# Go to CMS
+{"command_type":"navigate","data":{"url":"https://manage.wix.com/dashboard/3d861f70-c919-4aa5-8420-e7643606ce2b/database"}}
+
+# Go to Secrets Manager
+{"command_type":"navigate","data":{"url":"https://manage.wix.com/dashboard/3d861f70-c919-4aa5-8420-e7643606ce2b/developer-tools/secrets-manager"}}
+
+# Open Editor
+{"command_type":"click","data":{"selector":"text=Edit Site"}}
+
+# Wix-specific commands (built into interactive_driver.py)
+{"command_type":"velo_list","data":{}}
+{"command_type":"velo_read","data":{"filename":"path/to/file.js"}}
+{"command_type":"velo_write","data":{"filename":"path/to/file.js","content":"// code"}}
+```
+
+### 13.7 Next Exploration Priorities
+
+1. **Open Wix Editor** → check if Velo Dev Mode is enabled on the live site
+2. **Secrets Manager** → store `GABINETE_USERNAME` and `GABINETE_PASSWORD` for Velo backend code
+3. **Create "Registros" collection** → CMS → Create Collection → define schema
+4. **Find /participe page in editor** → inspect form element IDs, add page code
+5. **Test Preview in Editor** → verify Velo code runs in preview mode before publishing
