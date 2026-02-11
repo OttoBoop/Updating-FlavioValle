@@ -169,8 +169,8 @@ describe('suspicious-data', () => {
         expect(result.reasons).toEqual([]);
       });
 
-      it('should accept valid CPF 347.066.120-98', () => {
-        const result = detectSuspicious({ cpf: '34706612098' });
+      it('should accept valid CPF 111.444.777-35', () => {
+        const result = detectSuspicious({ cpf: '11144477735' });
         expect(result.suspicious).toBe(false);
         expect(result.reasons).toEqual([]);
       });
@@ -364,8 +364,8 @@ describe('suspicious-data', () => {
       expect(validateCPF('529.982.247-25')).toBe(true);
     });
 
-    it('should return true for valid CPF 347.066.120-98', () => {
-      expect(validateCPF('34706612098')).toBe(true);
+    it('should return true for valid CPF 111.444.777-35', () => {
+      expect(validateCPF('11144477735')).toBe(true);
     });
 
     it('should return false for all-same-digit CPFs (0 through 9)', () => {
