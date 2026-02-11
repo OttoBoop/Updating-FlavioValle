@@ -20,9 +20,9 @@ async function debugLogin() {
   console.log('\nWaiting 3 seconds for page to load...');
   await page.waitForTimeout(3000);
 
-  // Find fields
-  const usernameSelector = 'input[placeholder*="suário"], input[type="text"]';
-  const passwordSelector = 'input[placeholder*="enha"], input[type="password"]';
+  // Find fields - use more specific selectors like FGV scraper
+  const usernameSelector = 'input[name="txtusuario"], input[id="txtusuario"], input[placeholder*="usuário"], input[type="text"]';
+  const passwordSelector = 'input[name="txtsenha"], input[id="txtsenha"], input[placeholder*="enha"], input[type="password"]';
 
   console.log('\nLooking for username field...');
   const usernameField = page.locator(usernameSelector).first();
@@ -41,9 +41,10 @@ async function debugLogin() {
   console.log('✓ Username filled');
 
   console.log('\nFilling password...');
-  await passwordField.click();
-  await page.waitForTimeout(500);
-  await passwordField.fill(credentials.gabinetePassword);
+  // Use pressSequentially instead of click+fill to avoid JavaScript event interception
+  await passwordField.focus();
+  await page.waitForTimeout(300);
+  await passwordField.pressSequentially(credentials.gabinetePassword, { delay: 100 });
   console.log('✓ Password filled');
 
   console.log('\nWaiting 2 seconds before clicking submit...');

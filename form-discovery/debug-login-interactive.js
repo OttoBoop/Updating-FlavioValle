@@ -381,7 +381,7 @@ async function main() {
 
     // Fill username
     console.log(chalk.cyan('\nFilling username...'));
-    const usernameField = page.locator('input[type="text"], input[placeholder*="suário"]').first();
+    const usernameField = page.locator('input[name="txtusuario"], input[id="txtusuario"], input[type="text"], input[placeholder*="suário"]').first();
     await usernameField.waitFor({ state: 'visible', timeout: 5000 });
     await usernameField.fill(credentials.gabineteUsername);
     console.log(chalk.green('✓ Username filled'));

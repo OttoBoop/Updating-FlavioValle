@@ -4,7 +4,7 @@ import { decryptCredentials } from './utils/decrypt-credentials.js';
 console.log('\n🔍 Starting gabineteonline login...\n');
 
 const credentials = decryptCredentials();
-console.log('✅ Credentials loaded for:', credentials.gabineteEmail);
+console.log('✅ Credentials loaded for:', credentials.gabineteUsername);
 
 const browser = await chromium.launch({ headless: false });
 const page = await browser.newPage();
@@ -19,12 +19,12 @@ console.log('📝 Page loaded. Looking for login fields...\n');
 
 // Try to find and fill login fields
 try {
-  const emailInput = page.locator('input[type="email"], input[name="email"], input[name="usuario"]').first();
-  const passwordInput = page.locator('input[type="password"], input[name="password"], input[name="senha"]').first();
+  const emailInput = page.locator('input[name="txtusuario"], input[id="txtusuario"], input[type="email"], input[name="email"], input[name="usuario"]').first();
+  const passwordInput = page.locator('input[name="txtsenha"], input[id="txtsenha"], input[type="password"], input[name="password"], input[name="senha"]').first();
   
   if (await emailInput.count() > 0) {
-    console.log('✅ Found email field, filling...');
-    await emailInput.fill(credentials.gabineteEmail);
+    console.log('✅ Found username field, filling...');
+    await emailInput.fill(credentials.gabineteUsername);
   }
   
   if (await passwordInput.count() > 0) {
