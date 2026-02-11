@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { login, submitRegistration } from '../utils/velo-gabinete-client.jsw';
+import { login, submitRegistration } from '../utils/velo-gabinete-client.js';
 import { createWixFetchMock } from '../utils/wix-mocks.js';
 
 describe('Velo Gabinete Client (F4-T5)', () => {

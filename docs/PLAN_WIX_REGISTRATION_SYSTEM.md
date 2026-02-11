@@ -1,20 +1,22 @@
 # Wix Registration Gate — Implementation Plan
 
 **Generated:** 2026-02-10
-**Revised:** 2026-02-11 (v2 — dev workflow rewrite)
+**Revised:** 2026-02-12 (v3 — single-page architecture, live site with previews)
 **Status:** Draft
-**Supersedes:** `.claude/plans/wix-registration-system.md` (legacy, archived to `docs/legacy/`)
+**Supersedes:** v2 (dev site approach), v1 (3-page flow)
 **Discovery Sources:**
-- `.claude/clarify-session.md` (56+25 questions, archived to `docs/legacy/`)
-- Discovery session 2026-02-11 (dev workflow, 6 categories, all answered)
+- Discovery session 2026-02-11 (dev workflow, 6 categories)
+- Site exploration 2026-02-11 (live site structure, WhatsApp mapping)
+- Deep exploration 2026-02-12 (/participe form mapping, Velo API research)
+- Discovery session 2026-02-12 (v3 — single-page, live previews, sync strategy)
 
 ---
 
 ## 1. Executive Summary
 
-Build a registration gate on flaviovalle.com that intercepts WhatsApp contact attempts, collects constituent data via a Wix form, and automatically syncs registrations to gabineteonline1.com.br in the background. This eliminates manual data entry by office staff, reducing ~30% data entry errors and saving ~20 staff hours per week.
+Enhance the existing `/participe` page on flaviovalle.com to intercept WhatsApp contact attempts, collect constituent data via an expanded registration form, save to Wix DB, and batch-sync registrations to gabineteonline1.com.br. This eliminates manual data entry by office staff, reducing ~30% data entry errors and saving ~20 staff hours per week.
 
-**v2 Changes:** Restructured to use Wix CLI + duplicated dev site for automated development workflow (matching the Render project pattern). Pure logic modules extracted for parallel TDD. Node.js reference implementations deprecated in favor of Wix Velo ports.
+**v3 Changes:** Single-page architecture on existing `/participe` (not 3 new pages). Develop on LIVE site with Wix previews (not blank dev site). All gabineteonline fields supported with hidden toggle. Batch sync (hours, not real-time). Try Wix `.jsw` sync first, Render proxy as fallback. xajax protocol discovery corrects F2 assumptions.
 
 ---
 
@@ -41,22 +43,21 @@ The vereador office at **flaviovalle.com** has a manual, error-prone registratio
 - [ ] Data appears in Wix database AND gabineteonline admin panel
 - [ ] Returning users recognized by phone number (no re-registration)
 - [ ] Form completion < 2 minutes
-- [ ] Background sync succeeds ≥95% of attempts
+- [ ] Background sync succeeds ≥95% of attempts (batch, within hours)
 - [ ] Alerts sent when sync fails (SMS/WhatsApp to technical contact)
 - [ ] < 5 blocking issues in first week post-launch
-- [ ] Live site (flaviovalle.com) not broken during deployment
-- [ ] Dev workflow enables Claude Code to develop, preview, and verify features via CLI
+- [ ] Live site (flaviovalle.com) not broken — use previews for testing
+- [ ] All gabineteonline fields available (hidden by default, toggleable)
 
 ### 2.4 Explicitly Out of Scope
 
-- Deploying to the PRODUCTION site (flaviovalle.com) — separate future `/discover` cycle
-- User account management (password resets, profile editing)
+- Building on the blank `flaviovalle-dev` site (saved for future major overhauls)
 - SMS verification for phone numbers
 - Detailed analytics/usage tracking (basic logging only for v1)
 - Email notifications/confirmations (v2)
 - Custom admin dashboard (use Wix built-in database viewer)
 - Multi-language support (Portuguese only)
-- Modifying the existing WhatsApp redirect (only intercept before it)
+- Footer form redesign (pending design team discussion — see Section 12)
 
 ---
 
@@ -65,98 +66,125 @@ The vereador office at **flaviovalle.com** has a manual, error-prone registratio
 ### 3.1 System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                  flaviovalle-dev (Wix DUPLICATE)                 │
-│                  (Development & Staging Site)                    │
-│                                                                 │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
-│  │ Phone Lookup │ -> │ Welcome Back │ -> │   WhatsApp   │     │
-│  │    Page      │    │     Page     │    │   Redirect   │     │
-│  └──────┬───────┘    └──────────────┘    └──────────────┘     │
-│         │                                                      │
-│         └──────> ┌──────────────┐                              │
-│                  │ Registration │                              │
-│                  │     Form     │                              │
-│                  └──────┬───────┘                              │
-│                         │                                      │
-│                         v                                      │
-│                  ┌──────────────┐                              │
-│                  │   Wix DB     │ (Source of Truth)            │
-│                  │ "Registros"  │                              │
-│                  └──────┬───────┘                              │
-└─────────────────────────┼──────────────────────────────────────┘
-                          │
-                          │ Background Sync (async, 3 retries)
-                          v
-                 ┌────────────────────┐
-                 │ gabineteonline1    │
-                 │ .com.br            │
-                 │ (Secondary)        │
-                 └────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                    flaviovalle.com (LIVE SITE)                       │
+│                    Development via Wix preview                       │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────┐       │
+│  │              /participe (SINGLE PAGE)                    │       │
+│  │                                                         │       │
+│  │  ┌─────────────┐    ┌────────────────────────┐         │       │
+│  │  │ Phone Input │ -> │ Returning? Welcome Back │ -> WhatsApp
+│  │  └──────┬──────┘    └────────────────────────┘         │       │
+│  │         │                                               │       │
+│  │         └──> ┌──────────────────────────────┐          │       │
+│  │              │ Registration Form             │          │       │
+│  │              │ (all gabinete fields,         │          │       │
+│  │              │  hidden toggle for extras)    │          │       │
+│  │              └──────────┬───────────────────┘          │       │
+│  │                         │                               │       │
+│  │                         v                               │       │
+│  │              ┌──────────────────┐                      │       │
+│  │              │ Wix DB "Registros"│ (Source of Truth)    │       │
+│  │              └──────────┬───────┘                      │       │
+│  └─────────────────────────┼───────────────────────────────┘       │
+└─────────────────────────────┼───────────────────────────────────────┘
+                              │
+                              │ Batch Sync (hours, 3 retries)
+                              │ Try: Wix .jsw → Fallback: Render proxy
+                              v
+                     ┌────────────────────┐
+                     │ gabineteonline1    │
+                     │ .com.br            │
+                     │ (xajax protocol)   │
+                     │ (Turnstile CAPTCHA)│
+                     └────────────────────┘
 ```
 
 ### 3.2 Development Workflow
 
 ```
-flaviovalle.com (LIVE — DO NOT TOUCH)
-       ↓ duplicate (one-time, automated via Playwright)
-flaviovalle-dev (DEV SITE — our staging)
+flaviovalle.com (LIVE SITE — work here with previews)
        ↓ Wix CLI auth
 Local IDE (write Velo code here)
-       ↓ wix preview / wix publish
-flaviovalle-dev (verify features live)
-       ↓ journey agent (visual verification)
-Confirmed working on dev site
-       ↓ (FUTURE: copy to production — separate plan)
-flaviovalle.com
+       ↓ wix preview (generates preview URL)
+Preview URL (test features without publishing)
+       ↓ journey agent (visual verification on preview)
+User approval
+       ↓ wix publish (goes live)
+flaviovalle.com (changes visible to public)
 ```
 
-**Key Principle:** All development happens on the DUPLICATE site. The live site is never touched until a dedicated production deployment plan is approved.
+**Key Principle:** Work directly on the live site using `wix preview` for testing. DO NOT publish until preview + journey agent + user approval are all complete.
 
-**Feature Tracking:** The `Updating-FlavioValle/CLAUDE.md` must track which features are "dev-only" vs "deployed to production" so all agents know the current state.
+**Note:** `flaviovalle-dev` (blank site) is preserved for future major overhauls but NOT used for this iteration.
 
 ### 3.3 Data Flow
 
-**Three-Page User Flow:**
-1. **Phone Lookup** (`/registro-telefone`): User enters phone number
-   - IF existing → Welcome Back page
-   - IF new → Registration Form page
-2. **Welcome Back** (`/bem-vindo`): "Bem-vindo de volta, [Name]!" + two buttons:
-   - "Entrar em contato via WhatsApp" (direct access)
-   - "Atualizar Cadastro" (pre-filled edit form)
-3. **Registration Form** (`/cadastro`): Collect required fields → save to Wix DB → redirect to WhatsApp
-4. **Background**: Wix DB → async HTTP POST → gabineteonline (3 retries, exponential backoff)
+**Single-Page User Flow on `/participe`:**
+1. User clicks WhatsApp widget → redirected to `/participe` (configured in Wix Editor)
+2. `/participe` page code checks if user is returning (phone in DB)
+   - IF returning → show "Bem-vindo de volta, [Apelido]!" + direct WhatsApp link + "Atualizar Cadastro" option
+   - IF new → show enhanced registration form
+3. User fills form (required: Nome Completo, Apelido, Celular; optional: everything else)
+4. On submit:
+   - Save to Wix DB "Registros" (immediate, source of truth)
+   - Mark `syncStatus: "pending"`
+   - Redirect to WhatsApp (`wa.me/5521978919938`)
+5. Background batch job syncs pending records to gabineteonline (hours cadence)
 
 **Two-Tier Data Architecture:**
 - **Tier 1 (Primary):** Wix Database — source of truth, immediate save on form submission
-- **Tier 2 (Secondary):** gabineteonline1.com.br — background sync, 3 retries (1s, 2s, 4s), alert on failure
+- **Tier 2 (Secondary):** gabineteonline1.com.br — batch sync, 3 retries, alert on failure
 
 ### 3.4 Technology Decisions
 
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
-| Frontend pages | Wix Pages (visual editor) | Already on Wix, no migration needed |
+| Frontend page | Existing `/participe` on flaviovalle.com | Already exists, has form fields, avoids creating new pages |
 | Frontend logic | Wix Velo (JavaScript) | Built-in, no extra cost, first-party integration |
 | Backend logic | Wix Velo Web Modules (.jsw) | Server-side functions within Wix ecosystem |
 | Database | Wix Data Collections | Built-in, no extra cost, indexed queries |
-| DB creation | Wix REST API | Automated, TDD-able, no Dashboard needed |
 | Credentials | Wix Secrets Manager | Encrypted storage, Wix-native |
-| Dev site setup | Playwright (one-time script) | Automate Dashboard tasks (duplicate, enable Velo) |
-| CLI development | Wix CLI (`wix dev`, `wix preview`, `wix publish`) | Local dev → staging workflow |
+| Development | Wix CLI (`wix preview`) on live site | Preview without publishing, user approves before publish |
 | Local testing | Jest + Wix API mocks | TDD for Velo code without live Wix dependency |
-| Form Discovery | Playwright + stealth plugin | Browser automation for gabineteonline inspection |
-| Local credentials | AES-256 encryption + .env | Secure local storage for development scripts |
+| Sync (primary) | Wix `.jsw` via `wix-fetch` | Try direct sync from Wix backend first |
+| Sync (fallback) | Render proxy (`ia-educacao-v2.onrender.com`) | Python endpoint if Wix can't handle xajax/CAPTCHA |
 | Monitoring | Wix Logs + SMS/WhatsApp alerts | No paid services required |
 
 ### 3.5 Integration Points
 
 | System | Direction | Protocol | Notes |
 |--------|-----------|----------|-------|
-| **gabineteonline1.com.br** | Wix → gabinete | HTTP POST (form submit) | Session cookie auth via `wix-fetch` in .jsw module |
-| **WhatsApp** | Wix → WhatsApp | URL redirect | Existing implementation, DO NOT MODIFY |
-| **SMS/WhatsApp Alerts** | Wix → Phone | TBD (Wix built-in or external API) | Alert staff on sync failures |
-| **Wix Dashboard** | Playwright → Wix | Browser automation | One-time setup only |
-| **Wix REST API** | CLI/scripts → Wix | HTTPS REST | DB collection creation, secrets management |
+| **gabineteonline1.com.br** | Wix → gabinete | xajax over HTTP POST | Session cookie auth. Try `wix-fetch` in .jsw, fallback to Render proxy |
+| **WhatsApp** | Wix → WhatsApp | URL redirect | `wa.me/5521978919938`. Widget link changed to `/participe` in Wix Editor |
+| **Render backend** | Wix → Render | HTTPS REST | Fallback sync proxy at `/api/gabinete-sync` if Wix .jsw can't handle xajax |
+| **SMS/WhatsApp Alerts** | Wix → Phone | TBD (Wix Automations or webhook) | Alert staff on sync failures |
+
+### 3.6 Critical Technical Context
+
+**gabineteonline uses xajax protocol (NOT simple HTTP POST):**
+```
+Request format:
+  POST /flaviovalle/cadastroclientes_dados.php
+  Content-Type: application/x-www-form-urlencoded
+  Body: xajax=CadastrarClienteDados&xajaxr=[timestamp]&xajaxargs[]=[encoded-form-data]
+
+Response format:
+  XML with <xjx> root containing <cmd> elements
+```
+
+**gabineteonline login has Cloudflare Turnstile CAPTCHA:**
+- Sitekey: `0x4AAAAAAA6QJue2Fkes3Jsu`
+- Honeypot field: `input#current-password` (must NOT be filled)
+- Login fields: `input#txtusuario`, `input#txtsenha`, `button.btn-login`
+- Success indicator: URL contains `index.php`
+
+**Evidence files:**
+- `general_scraper/xajax_request.txt` — captured real xajax request
+- `general_scraper/xajax_response.txt` — captured real xajax XML response
+- `general_scraper/cadastrar_cliente_func.js` — client-side validation function
+- `general_scraper/profiles/gabineteonline.yaml` — full login profile with CAPTCHA info
 
 ---
 
@@ -164,234 +192,235 @@ flaviovalle.com
 
 ### Feature 1: Setup & Credentials (F1) ✅ COMPLETE
 
-**User Story:** As a developer, I want secure credential storage so that I can safely automate login to external services.
-
-**Acceptance Criteria:**
-- [x] Project directory structure created
-- [x] Node.js project initialized with dependencies
-- [x] Encrypted credential storage (AES-256) working
-- [x] Credentials persist across sessions
-- [x] .env in .gitignore
-
 **Tasks:**
-| ID | Task | Dependencies | Effort | Status |
-|----|------|--------------|--------|--------|
-| F1-T1 | Create project directory structure and initialize Node.js | None | S | ✅ Done |
-| F1-T2 | Build secure credential collection and encryption system | F1-T1 | M | ✅ Done |
-
-**Deliverables (completed):**
-- `scripts/setup-credentials.js` — interactive CLI for credential collection
-- `.env` — encrypted credential store (gitignored)
-- `package.json` — project dependencies
+| ID | Task | Status |
+|----|------|--------|
+| F1-T1 | Create project directory structure and initialize Node.js | ✅ Done |
+| F1-T2 | Build secure credential collection and encryption system | ✅ Done |
 
 ---
 
-### Feature 2: Form Discovery (F2) ✅ COMPLETE
-
-**User Story:** As a developer, I want to discover all form fields from gabineteonline so that I can build a Wix form that maps to their registration system.
-
-**Acceptance Criteria:**
-- [x] Script logs into gabineteonline (bypassing Cloudflare)
-- [x] 184 form fields discovered and categorized (38 visible)
-- [x] JSON schema generated (`gabineteonline-schema.json`)
-- [x] Form submission mechanism identified (HTTP POST)
+### Feature 2: Form Discovery (F2) ✅ COMPLETE (with corrections)
 
 **Tasks:**
-| ID | Task | Dependencies | Effort | Status |
-|----|------|--------------|--------|--------|
-| F2-T1 | Build stealth browser automation and discover gabineteonline form fields | F1-T2 | L | ✅ Done |
+| ID | Task | Status |
+|----|------|--------|
+| F2-T1 | Discover gabineteonline form fields (184 fields, 38 visible) | ✅ Done |
 
-**Deliverables (completed):**
-- `form-discovery/utils/browser-setup-stealth.js` — stealth Playwright login
-- `form-discovery/quick-extract.js` — fast field extraction via `page.evaluate()`
-- `form-discovery/output/gabineteonline-schema.json` — 184 fields (38 visible)
-- `form-discovery/output/cadastro-full-page.png` — full-page screenshot
-
-**Key Discovery:** gabineteonline uses standard HTML form POST (not xajax), making Direct HTTP POST approach highly feasible for background sync.
+**CORRECTION (2026-02-12):** F2 originally stated "gabineteonline uses standard HTML form POST." **WRONG.** It uses **xajax protocol** (XML-based AJAX). The `CadastrarClienteDados` JS function serializes form data and sends via xajax. This affects the sync approach in F4-T5/F4-T6.
 
 ---
 
-### Feature 3: Dev Environment Setup (F3)
+### Feature 3: Wix Environment Setup (F3) — REVISED
 
-**User Story:** As a developer, I want an automated Wix development environment so that I can build, preview, and verify features without touching the live site.
+**User Story:** As a developer, I want the Wix CLI connected to flaviovalle.com so that I can write Velo code locally and preview it.
 
 **Acceptance Criteria:**
-- [ ] Duplicate dev site exists (separate from flaviovalle.com)
-- [ ] Velo Dev Mode enabled on dev site
-- [ ] Wix CLI authenticated and `wix dev` functional
-- [ ] DB collection `Registros` created via REST API with proper schema
-- [ ] Wix API mock library enables local Jest testing of Velo code
+- [ ] Wix CLI authenticated and connected to flaviovalle.com
 - [ ] `wix preview` generates a working preview URL
+- [ ] DB collection `Registros` created with proper schema
+- [ ] Wix API mock library enables local Jest testing
 
 **Tasks:**
 | ID | Task | Dependencies | Effort | Status |
 |----|------|--------------|--------|--------|
-| F3-T1 | Build one-time Playwright script to duplicate site and enable Velo | F1-T2 | M | ✅ Done |
-| F3-T2 | Install Wix CLI, authenticate (`wix login`), verify `wix dev` works | F3-T1 | S | ⬜ |
-| F3-T3 | Create `Registros` DB collection via Wix REST API (schema, indexes, permissions) | F3-T2 | M | ⬜ |
-| F3-T4 | Build Wix API mock library (wix-data, wix-fetch, wix-location, wix-secrets) for Jest | None | M | ✅ Done |
-
-**Tests Required (write BEFORE implementation):**
-- [ ] Test: F3-T3 — DB collection created with all required fields (nome, celular, email, etc.)
-- [ ] Test: F3-T3 — Collection has proper indexes (phone number for lookup)
-- [x] Test: F3-T4 — Mock `wix-data.query()` returns expected results
-- [x] Test: F3-T4 — Mock `wix-fetch()` sends correct HTTP requests
-- [x] Test: F3-T4 — Mock `wix-secrets.getSecret()` returns stored values
+| F3-T1 | ~~Dashboard automation~~ **REVISED:** Install Wix CLI, authenticate (`wix login`), connect to flaviovalle.com, verify `wix preview` works | F1-T2 | S | ⬜ Needs redo |
+| F3-T2 | Create `Registros` DB collection via Wix Dashboard or REST API (all gabineteonline fields, syncStatus, indexes on celular) | F3-T1 | M | ⬜ |
+| F3-T3 | Build Wix API mock library (wix-data, wix-fetch, wix-location, wix-secrets) for Jest | None | M | ✅ Done (34 tests) |
 
 **Notes:**
-- F3-T1 uses Playwright to automate Wix Dashboard (similar to gabineteonline stealth login)
-- F3-T4 has NO dependencies — can start immediately in parallel with everything else
-- After F3-T1 completes, provide links to user for manual verification
+- F3-T1 is simplified: just CLI setup, no Dashboard automation script needed
+- F3-T2 `Registros` schema must include ALL gabineteonline fields (see Section 4.4 for field list)
+- Old F3-T1 (wix-dashboard-automator.js, 13 tests) is preserved as reference but not used
 
 ---
 
-### Feature 4: Pure Logic Modules (F4)
+### Feature 4: Pure Logic Modules (F4) — PARTIALLY COMPLETE
 
-**User Story:** As a developer, I want tested, portable logic modules so that validation, mapping, and sync work correctly regardless of the runtime environment (Node.js or Wix Velo).
-
-**Acceptance Criteria:**
-- [ ] All validation modules work with Jest locally
-- [ ] Field mapper + HTTP client ported to Wix Velo format (.jsw)
-- [ ] Node.js versions deprecated per deprecation guide (kept as reference, not deleted)
-- [ ] Sync worker handles retries, backoff, and status tracking
+**User Story:** As a developer, I want tested, portable logic modules so that validation, mapping, and sync work correctly regardless of runtime.
 
 **Tasks:**
 | ID | Task | Dependencies | Effort | Status |
 |----|------|--------------|--------|--------|
-| F4-T1 | Build backend HTTP client for gabineteonline (Node.js reference) | F2-T1 | L | ✅ Done |
-| F4-T2 | Phone format validation module (Brazilian 11-digit + international) | None | S | ✅ Done |
-| F4-T3 | Email validation module | None | S | ✅ Done |
-| F4-T4 | Suspicious data detection module (fake patterns, spam, CPF algorithm) | None | S | ✅ Done |
-| F4-T5 | Port field-mapper + gabinete-client to Wix Velo (.jsw) using wix-fetch; deprecate Node.js versions | F3-T4, F4-T1 | M | ⬜ |
-| F4-T6 | Sync worker with retry logic (3 attempts, 1s/2s/4s backoff) and syncStatus tracking | F4-T5 | M | ⬜ |
+| F4-T1 | Backend HTTP client for gabineteonline (Node.js reference) | F2-T1 | L | ✅ Done (18 tests) |
+| F4-T2 | Phone format validation module | None | S | ✅ Done (21 tests) |
+| F4-T3 | Email validation module | None | S | ✅ Done (41 tests) |
+| F4-T4 | Suspicious data detection module (CPF mod-11) | None | S | ✅ Done (51 tests) |
+| F4-T5 | Port field-mapper + gabinete-client to Wix Velo (.jsw) using wix-fetch | F3-T3, F4-T1 | M | ⬜ |
+| F4-T6 | Sync worker: try Wix .jsw xajax sync first, track syncStatus. If xajax fails from wix-fetch, document failure for Render fallback decision | F4-T5 | M | ⬜ |
 
-**Tests Required (write BEFORE implementation):**
-- [x] Test: F4-T1 — Login to gabineteonline succeeds and returns session cookie
-- [x] Test: F4-T1 — Field mapping correctly translates Wix field names to gabineteonline field names
-- [x] Test: F4-T1 — Form submission via HTTP POST returns success indicator
-- [x] Test: F4-T2 — Phone validation accepts `(11)98765-4321`, `11987654321`, `+5511987654321`
-- [x] Test: F4-T2 — Phone validation rejects `12345`, `abcdefghijk`, empty string
-- [x] Test: F4-T2 — Phone normalization strips formatting to digits-only
-- [x] Test: F4-T3 — Email validation accepts `user@example.com`, rejects `not-email`
-- [x] Test: F4-T4 — Suspicious detection flags `11111111111`, `00000000000`, `teste@teste.com`
-- [x] Test: F4-T4 — Suspicious detection passes normal data through
-- [x] Test: F4-T4 — CPF validation uses mod-11 check-digit algorithm
+**Tests for remaining tasks:**
 - [ ] Test: F4-T5 — Ported gabinete-client uses `wix-fetch` mock correctly
-- [ ] Test: F4-T5 — Ported field-mapper behaves identically to Node.js version
-- [ ] Test: F4-T6 — Retry logic attempts 3 times with increasing delays (1s, 2s, 4s)
+- [ ] Test: F4-T5 — Ported field-mapper maps ALL gabineteonline fields (not just original 15)
+- [ ] Test: F4-T5 — Field mapper handles `nome` + `sobrenome` → concatenated `nome` for gabineteonline
+- [ ] Test: F4-T6 — Sync worker formats xajax request correctly (xajax=CadastrarClienteDados&xajaxr=...)
+- [ ] Test: F4-T6 — Retry logic attempts 3 times with increasing delays
 - [ ] Test: F4-T6 — syncStatus updates correctly (pending → synced | failed)
 - [ ] Test: F4-T6 — Sync worker returns failure after 3 failed attempts
 
-**Deprecation Note (F4-T5):**
-Per `docs/guides/GENERAL_DEPRECATION_AND_UNIFICATION_GUIDE.md`:
-- `utils/field-mapper.js` → deprecated, replaced by Velo `.jsw` version
-- `utils/gabinete-client.js` → deprecated, replaced by Velo `.jsw` version
-- Keep originals as reference implementations with deprecation comments
-- Velo versions must pass ALL existing tests (18 tests) using Wix mocks
+**IMPORTANT for F4-T5:** The field mapper must be updated to handle:
+- `nome` (Wix) + `sobrenome` (Wix) → concatenated `nome` (gabineteonline)
+- `apelido` from "Como gostaria de ser chamado?" field
+- ALL gabineteonline fields (not just the original 15 from v1)
 
 ---
 
-### Feature 5: Wix Frontend Pages (F5)
+### Feature 5: `/participe` Page Enhancement (F5) — REWRITTEN
 
-**User Story:** As a constituent visiting flaviovalle.com, I want to register via a simple form so that I can access WhatsApp contact without office staff intervention.
+**User Story:** As a constituent visiting flaviovalle.com, I want to register on `/participe` so I can access WhatsApp contact. As a returning user, I want to be recognized and skip registration.
 
 **Acceptance Criteria:**
-- [ ] Phone lookup page correctly routes returning vs new users
-- [ ] Welcome back page shows user name and offers WhatsApp access or edit
-- [ ] Registration form collects all required fields from gabineteonline schema
-- [ ] WhatsApp button clicks intercepted and routed through registration flow
-- [ ] All pages work on mobile + desktop
+- [ ] `/participe` page handles phone lookup (returning vs new user)
+- [ ] New users see registration form with required fields visible
+- [ ] "Nome Completo" label (maps to gabineteonline `nome`)
+- [ ] "Como gostaria de ser chamado?" field for apelido (required)
+- [ ] All gabineteonline fields available, non-essential hidden by default (toggleable in code)
+- [ ] Returning users see welcome message + WhatsApp link + "Atualizar Cadastro"
+- [ ] After submission → redirect to WhatsApp (`wa.me/5521978919938`)
+- [ ] Works on mobile + desktop
 
 **Tasks:**
 | ID | Task | Dependencies | Effort | Status |
 |----|------|--------------|--------|--------|
-| F5-T1 | Build Phone Lookup page (`/registro-telefone`) with phone input, validation, and DB query routing | F3-T3, F4-T2 | M | ⬜ |
-| F5-T2 | Build Welcome Back page (`/bem-vindo`) with returning user greeting, WhatsApp button, and edit button | F5-T1 | M | ⬜ |
-| F5-T3 | Build Registration Form page (`/cadastro`) with all required fields, validation, edit mode, and submission | F3-T3, F4-T2 | L | ⬜ |
-| F5-T4 | Intercept WhatsApp button/widget clicks site-wide via masterPage.js | F5-T1 | M | ⬜ |
+| F5-T1 | Enhance `/participe` form: rename nome→"Nome Completo", add "Como gostaria de ser chamado?" (apelido), add all gabineteonline fields as hidden-by-default toggleable sections | F3-T2 | L | ⬜ |
+| F5-T2 | Add phone lookup logic: on page load or phone input blur, query Registros DB. If returning → show welcome back state. If new → show full form | F3-T2, F4-T2 | M | ⬜ |
+| F5-T3 | Add form submission handler: validate → save to Wix DB with syncStatus:"pending" → redirect to WhatsApp | F5-T1, F5-T2, F4-T3, F4-T4 | M | ⬜ |
+| F5-T4 | Change WhatsApp widget link to `/participe` in Wix Editor. Add masterPage.js code for returning-user bypass (registered users go directly to WhatsApp) | F5-T2 | M | ⬜ |
 
-**Tests Required (write BEFORE implementation):**
-- [ ] Test: Phone format validation accepts Brazilian (11 digits) and international formats
+**Tests:**
 - [ ] Test: Phone lookup returns correct routing (existing → welcome, new → register)
-- [ ] Test: Registration form validates required fields before submission
-- [ ] Test: Email format validation rejects invalid patterns
-- [ ] Test: Suspicious data detection flags fake phone patterns (e.g., 11111111111)
-- [ ] Test: Edit mode pre-fills all existing user data
-- [ ] Test: WhatsApp redirect fires after successful registration (2s delay)
+- [ ] Test: Registration form validates required fields (Nome Completo, Apelido, Celular)
+- [ ] Test: "Nome Completo" + "Sobrenome" concatenated before save
+- [ ] Test: Hidden fields can be toggled visible via code flag
+- [ ] Test: Form data saved to Wix DB with syncStatus: "pending"
+- [ ] Test: WhatsApp redirect fires after successful registration
+- [ ] Test: Returning user sees welcome message with their apelido
 - [ ] Test: Error state preserves form data for retry
 
+### 4.4 Registros DB Schema (for F3-T2 and F5)
+
+**Required fields (always visible on form):**
+
+| Wix Field | Label (Portuguese) | gabineteonline Field | Type | Max | Required |
+|-----------|-------------------|---------------------|------|-----|----------|
+| `nomeCompleto` | "Nome Completo" | `nome` | text | 200 | ✅ |
+| `apelido` | "Como gostaria de ser chamado?" | `apelido` | text | 30 | ✅ |
+| `celular` | "Celular" | `celular` | text | 14 | ✅ |
+| `email` | "Email" | `email` | text | 5000 | ✅ |
+| `bairro` | "Bairro" | `id_bairro` | dropdown | — | ✅ |
+
+**Optional fields (hidden by default, toggleable):**
+
+| Wix Field | Label (Portuguese) | gabineteonline Field | Type | Max |
+|-----------|-------------------|---------------------|------|-----|
+| `cpf` | "CPF" | `cpf` | text | 14 |
+| `sexo` | "Sexo" | `sexo` | select (1=M, 2=F) | — |
+| `dataNascimento` | "Data de Nascimento" | `datanascimento` | text | 10 |
+| `telefone` | "Telefone Fixo" | `telefone` | text | 13 |
+| `cep` | "CEP" | `cep` | text | 9 |
+| `endereco` | "Endereço" | `endereco` | text | 200 |
+| `numero` | "Número" | `numero` | text | 100 |
+| `complemento` | "Complemento" | `complemento` | text | 200 |
+| `uf` | "Estado" | `uf` | select (27 UFs) | — |
+| `observacao` | "Observações" | `observacao` | textarea | 500 |
+| `titulo` | "Título de Eleitor" | `titulo` | text | 50 |
+| `sessao` | "Seção Eleitoral" | `sessao` | text | 30 |
+
+**System fields (not shown on form):**
+
+| Wix Field | Purpose | Default |
+|-----------|---------|---------|
+| `syncStatus` | Sync tracking | `"pending"` |
+| `syncError` | Last error message | `null` |
+| `syncAttempts` | Retry counter | `0` |
+| `gabineteId` | ID in gabineteonline after sync | `null` |
+| `lastSyncAt` | Timestamp of last sync attempt | `null` |
+
 ---
 
-### Feature 6: Testing & Verification (F6)
+### Feature 6: Background Sync to Gabineteonline (F6) — REWRITTEN
 
-**User Story:** As a developer, I want comprehensive tests and visual verification so that I can confirm features work on the dev site before considering production deployment.
+**User Story:** As office staff, I want constituent registrations from the website to automatically appear in gabineteonline so I don't have to enter them manually.
 
 **Acceptance Criteria:**
-- [ ] Integration tests verify Wix DB and gabineteonline sync on dev site
-- [ ] UI tests (Playwright) cover all pages on dev site
-- [ ] Journey agent runs successfully against dev site
-- [ ] All test patterns match Render project conventions
+- [ ] Pending records batch-synced to gabineteonline (within hours)
+- [ ] Sync handles xajax protocol correctly
+- [ ] Failed syncs retry 3 times then alert staff
+- [ ] syncStatus tracked per record (pending → synced | failed)
 
 **Tasks:**
 | ID | Task | Dependencies | Effort | Status |
 |----|------|--------------|--------|--------|
-| F6-T1 | Integration tests for Wix DB operations and gabineteonline sync | F4-T6, F5-T3 | M | ⬜ |
-| F6-T2 | UI tests (Playwright) for all pages on dev site | F5-T4 | M | ⬜ |
-| F6-T3 | Journey agent verification on dev site (investor + tester personas) | F6-T2 | M | ⬜ |
+| F6-T1 | Build Wix .jsw sync module: login to gabineteonline via wix-fetch, submit via xajax protocol. Test if wix-fetch can handle cookies + xajax | F4-T5, F4-T6 | L | ⬜ |
+| F6-T2 | If F6-T1 fails (wix-fetch can't handle xajax/CAPTCHA): Build Render proxy endpoint (`/api/gabinete-sync`) on IA_Educacao_V2 that receives form data and uses Python to sync | F6-T1 (if failed) | L | ⬜ (contingency) |
+| F6-T3 | Build batch sync trigger: Wix scheduled job or manual trigger that queries Registros where syncStatus="pending" and syncs each | F6-T1 or F6-T2 | M | ⬜ |
+| F6-T4 | Alert system: notify staff (SMS/WhatsApp) when sync fails after 3 retries | F6-T3 | S | ⬜ |
 
-**Tests Required (write BEFORE implementation):**
-- [ ] Test: New user full flow (WhatsApp click → register → Wix DB → gabineteonline → WhatsApp)
-- [ ] Test: Returning user direct access (phone lookup → welcome → WhatsApp)
-- [ ] Test: Returning user edit flow (phone lookup → welcome → edit → update → WhatsApp)
-- [ ] Test: Network failure during submission (error shown, data preserved)
-- [ ] Test: gabineteonline down (Wix save succeeds, user gets WhatsApp, sync retries in background)
+**Tests:**
+- [ ] Test: Sync module formats correct xajax request body
+- [ ] Test: Sync module handles login cookies correctly
+- [ ] Test: Batch trigger processes all pending records
+- [ ] Test: Failed sync increments syncAttempts and retries
+- [ ] Test: syncStatus transitions: pending → synced (on success)
+- [ ] Test: syncStatus transitions: pending → failed (after 3 failures)
+- [ ] Test: Alert fires when record reaches failed state
 
 ---
 
-### Feature 7: Production Deployment (F7) — DEFERRED
+### Feature 7: Verification & Publishing (F7)
 
-**Status:** OUT OF SCOPE for this plan. Requires a separate `/discover` cycle.
+**User Story:** As a developer, I want to verify everything works on preview before publishing to the live site.
 
-**When to trigger:** After all features are verified working on the dev site (F6-T3 complete).
+**Tasks:**
+| ID | Task | Dependencies | Effort | Status |
+|----|------|--------------|--------|--------|
+| F7-T1 | Run journey agent against preview URL (tester persona, verify full flow) | F5-T4, F6-T3 | M | ⬜ |
+| F7-T2 | Get user approval on preview | F7-T1 | S | ⬜ |
+| F7-T3 | Publish to live site (`wix publish`) and verify | F7-T2 | S | ⬜ |
 
-**What it will cover:**
-- Strategy for copying features from `flaviovalle-dev` to `flaviovalle.com`
-- Rollback plan
-- First-registration monitoring
-- CLAUDE.md update to mark features as "live"
+---
+
+### Feature 8: Footer Form Redesign Options (F8) — DESIGN PROPOSAL ONLY
+
+**Status:** NOT implementing. Creating options document for design team discussion.
+
+**Tasks:**
+| ID | Task | Dependencies | Effort | Status |
+|----|------|--------------|--------|--------|
+| F8-T1 | Document footer form redesign options: (A) delete entirely, (B) wire to same Registros backend, (C) expand fields to match /participe. Include mockups/descriptions for design team review | F5-T3 | S | ⬜ |
 
 ---
 
 ## 5. Test Strategy
 
-### 5.1 Testing Pyramid (Matching Render Patterns)
+### 5.1 Testing Pyramid
 
 ```
 tests/
 ├── unit/           # Pure logic, no external calls (Jest + Wix mocks)
-│   ├── phone-validation.test.js
-│   ├── email-validation.test.js
-│   ├── suspicious-data.test.js
-│   ├── field-mapper.test.js        # Existing (18 tests)
-│   └── gabinete-client.test.js     # Existing (18 tests)
+│   ├── phone-validation.test.js      ✅ 21 tests
+│   ├── email-validation.test.js      ✅ 41 tests
+│   ├── suspicious-data.test.js       ✅ 51 tests
+│   ├── field-mapper.test.js          ✅ 18 tests
+│   ├── gabinete-client.test.js       ✅ 18 tests
+│   ├── wix-mocks.test.js             ✅ 34 tests
+│   ├── wix-dashboard-automator.test.js ✅ 13 tests (reference only)
+│   ├── sync-worker.test.js           ⬜ (F4-T6)
+│   └── velo-field-mapper.test.js     ⬜ (F4-T5)
 │
-├── integration/    # External services (Wix REST API, gabineteonline)
-│   ├── wix-db.test.js
-│   └── gabineteonline-sync.test.js
+├── integration/    # Against preview URL or real services
+│   ├── gabinete-xajax-sync.test.js   ⬜ (F6-T1)
+│   └── wix-db-operations.test.js     ⬜ (F3-T2)
 │
-├── ui/             # Playwright browser tests on dev site
-│   ├── phone-lookup.test.js
-│   ├── registration-form.test.js
-│   └── whatsapp-intercept.test.js
+├── ui/             # Playwright against preview URL
+│   ├── participe-form.test.js        ⬜ (F7-T1)
+│   └── whatsapp-redirect.test.js     ⬜ (F7-T1)
 │
-└── journey/        # Journey agent configs for dev site
-    └── tester-checklists/
+└── journey/        # Journey agent against preview URL
+    └── registration-flow.md          ⬜ (F7-T1)
 ```
 
-- **Unit Tests:** Phone formatting, email validation, suspicious data detection, field mapping, Wix mock behavior. Target: 100% of pure utility functions.
-- **Integration Tests:** Wix DB insert/query/update via REST API, gabineteonline login + form submission, retry logic with simulated failures.
-- **UI Tests:** Playwright against `flaviovalle-dev` — page navigation, form submission, WhatsApp redirect.
-- **Journey Agent:** Visual verification with `tester` persona against dev site URL.
+**Current status:** 196 unit tests passing (committed), 32 additional passing (MockDataGenerator, uncommitted in general_scraper).
 
 ### 5.2 TDD Checklist (Per Task)
 
@@ -421,20 +450,18 @@ npm test -- field-mapper.test.js
 # Run with coverage
 npm test -- --coverage
 
-# Run in watch mode
-npm test -- --watch
-
-# UI tests (requires dev site running)
-npx playwright test tests/ui/
+# UI tests against preview URL
+npx playwright test tests/ui/ --config=preview.config.js
 ```
 
-### 5.4 Wix Mock Library (F3-T4)
+### 5.4 Definition of Done (Before Publishing)
 
-Local Jest tests mock these Wix APIs:
-- `wix-data` — `.query()`, `.insert()`, `.update()`, `.get()`
-- `wix-fetch` — `fetch()` with headers, body, cookies
-- `wix-location` — `.to()`, `.query`, `.path`
-- `wix-secrets` — `.getSecret()`
+1. ✅ All unit tests pass (Jest)
+2. ✅ Preview URL works correctly
+3. ✅ Journey agent passes with tester persona
+4. ✅ User manually approves preview
+5. ✅ `wix publish` executed
+6. ✅ Live site verified working
 
 ---
 
@@ -444,66 +471,62 @@ Local Jest tests mock these Wix APIs:
 
 ```
 Phase 1 (F1, F2) ─── DONE
-F4-T1 ─── DONE
+F4-T1..T4 ─── DONE (196 tests)
+F3-T3 (mocks) ─── DONE (34 tests)
        │
-       ├──> PARALLEL GROUP A (no dependencies — start NOW):
-       │    ├── F3-T4: Wix mock library
-       │    ├── F4-T2: Phone validation
-       │    ├── F4-T3: Email validation
-       │    └── F4-T4: Suspicious data detection
+       ├──> Phase 2: CLI + DB Setup
+       │    F3-T1 (Wix CLI on live site) → F3-T2 (Registros DB collection)
        │
-       ├──> SEQUENTIAL GROUP B (one-time setup):
-       │    F3-T1 (Dashboard automation) → F3-T2 (CLI setup) → F3-T3 (DB collection)
+       ├──> Phase 3: Velo Logic (needs Phase 2 + F4 done)
+       │    F4-T5 (port to Velo) → F4-T6 (sync worker)
        │
-       ├──> GROUP C (needs A + B complete):
-       │    ├── F4-T5: Port to Wix Velo (needs F3-T4 mocks + F4-T1 reference)
-       │    └── F4-T6: Sync worker (needs F4-T5)
+       ├──> Phase 4: /participe Enhancement (needs Phase 2 + Phase 3)
+       │    F5-T1 (form fields) → F5-T2 (phone lookup) →
+       │    F5-T3 (submission handler) → F5-T4 (WhatsApp intercept)
        │
-       └──> GROUP D (needs B + C complete):
-            ├── F5-T1..T4: Wix pages (needs F3-T3 DB + F4-T2 validation)
-            └── F6-T1..T3: Testing & verification (needs F5 pages)
+       ├──> Phase 5: Background Sync (needs Phase 3 + Phase 4)
+       │    F6-T1 (try Wix .jsw) → F6-T2 (Render fallback if needed) →
+       │    F6-T3 (batch trigger) → F6-T4 (alerts)
+       │
+       └──> Phase 6: Verification & Publish (needs Phase 4 + Phase 5)
+            F7-T1 (journey agent) → F7-T2 (user approval) → F7-T3 (publish)
+            F8-T1 (footer redesign options doc — can run anytime)
 ```
 
 ### Phase 1: Foundation ✅ COMPLETE
-**Goal:** Secure credentials and discover gabineteonline form structure
-**Completed:** F1-T1, F1-T2, F2-T1, F4-T1
+**Completed:** F1-T1, F1-T2, F2-T1, F4-T1, F4-T2, F4-T3, F4-T4, F3-T3
+**Tests:** 196 passing
 
-### Phase 2: Parallel Pure Logic + Setup
-**Goal:** Build all testable logic modules while setting up the dev environment
+### Phase 2: CLI + DB Setup
+**Goal:** Connect Wix CLI to live site, create Registros collection
+- [ ] F3-T1: Wix CLI setup + auth on flaviovalle.com
+- [ ] F3-T2: Create Registros DB collection (all fields from Section 4.4)
 
-**Can run in parallel:**
-- [x] F3-T4: Wix mock library ✅ (unblocks F4-T5)
-- [x] F4-T2: Phone validation ✅ (21 tests)
-- [x] F4-T3: Email validation ✅ (41 tests)
-- [x] F4-T4: Suspicious data detection ✅ (51 tests, CPF algorithm)
-- [x] F3-T1: Dashboard automation script ✅ (13 tests, needs manual run)
-- [ ] F3-T2: CLI setup + auth
-- [ ] F3-T3: DB collection via REST API
+### Phase 3: Velo Logic
+**Goal:** Port field mapper and sync worker to Wix Velo
+- [ ] F4-T5: Port field-mapper + gabinete-client to .jsw (handle nome+sobrenome→nome concatenation)
+- [ ] F4-T6: Sync worker with xajax format, retry logic, syncStatus tracking
 
-### Phase 3: Wix Integration
-**Goal:** Port to Velo, build sync worker, wire everything together
+### Phase 4: /participe Enhancement
+**Goal:** Transform /participe into full registration hub
+- [ ] F5-T1: Enhance form (Nome Completo, Apelido, hidden toggleable fields)
+- [ ] F5-T2: Phone lookup (returning user detection)
+- [ ] F5-T3: Form submission handler (validate → save → redirect WhatsApp)
+- [ ] F5-T4: WhatsApp widget link change + masterPage.js for registered-user bypass
 
-**Sequential:**
-- [ ] F4-T5: Port field-mapper + gabinete-client to Wix Velo
-- [ ] F4-T6: Sync worker with retry logic
+### Phase 5: Background Sync
+**Goal:** Automated batch sync to gabineteonline
+- [ ] F6-T1: Try Wix .jsw sync (xajax + cookies via wix-fetch)
+- [ ] F6-T2: Render proxy fallback (if F6-T1 fails)
+- [ ] F6-T3: Batch sync trigger (scheduled job or manual)
+- [ ] F6-T4: Staff alerts on sync failure
 
-### Phase 4: Frontend Pages
-**Goal:** Build all user-facing pages on the dev site
-
-- [ ] F5-T1: Phone Lookup page
-- [ ] F5-T2: Welcome Back page
-- [ ] F5-T3: Registration Form page
-- [ ] F5-T4: WhatsApp intercept
-
-### Phase 5: Verification
-**Goal:** Comprehensive testing and visual verification on dev site
-
-- [ ] F6-T1: Integration tests
-- [ ] F6-T2: UI tests (Playwright)
-- [ ] F6-T3: Journey agent verification
-
-### Phase 6: Production Deployment — DEFERRED
-**Goal:** Deploy to live site (separate `/discover` cycle required)
+### Phase 6: Verification & Publish
+**Goal:** Verify everything on preview, get approval, go live
+- [ ] F7-T1: Journey agent on preview URL
+- [ ] F7-T2: User approval
+- [ ] F7-T3: Publish to live
+- [ ] F8-T1: Footer redesign options doc (for design team)
 
 ---
 
@@ -511,28 +534,26 @@ F4-T1 ─── DONE
 
 | Risk | Likelihood | Impact | Mitigation Strategy |
 |------|------------|--------|---------------------|
-| Breaking live website during deployment | N/A (deferred) | Critical | All dev on duplicate site. Production deployment is a separate plan. |
-| Wix Dashboard automation blocked by Cloudflare/CAPTCHA | Medium | Medium | Retry 3 times + alert user. Fall back to manual setup with links. |
-| Secrets Manager not configured on original site | Medium | Medium | Check during F3-T1. If missing, configure via Dashboard automation bot. |
-| gabineteonline form schema changes | Low | High | Run discovery script quarterly. Version schema file. Monitor sync failures. |
-| User abandons registration (low completion) | Medium | High | Keep form minimal (required fields only). Wix built-in styling. |
-| Wix Velo mock fidelity issues | Medium | Medium | Compare mock behavior against real API during integration tests. |
-| wix-fetch doesn't support session cookies like Node.js fetch | Medium | High | Research wix-fetch cookie handling during F4-T5. May need alternate approach. |
-| Election traffic spike (1000+/day in 2026) | High | Medium | Wix auto-scales. Database indexed. Load test before election period. |
-| No local dev environment for Wix code | Low (solved) | N/A | Wix CLI + local editor + Jest mocks solve this. |
+| wix-fetch can't handle xajax + cookies | Medium | High | F6-T2 Render proxy fallback already planned. Python tools exist (upload_teste_contacts.py) |
+| Cloudflare Turnstile blocks automated sync | High | High | Batch sync with persistent session. If Wix fails, Render proxy with browser automation |
+| Breaking live site during preview development | Low | Critical | `wix preview` is isolated. Never `wix publish` without user approval + journey verification |
+| gabineteonline form schema changes | Low | High | Run discovery quarterly. Version schema file. Monitor sync failures |
+| User abandons registration (long form) | Medium | High | Required fields are minimal (3). Optional fields hidden by default. Progressive disclosure |
+| Election traffic spike (1000+/day in 2026) | High | Medium | Wix auto-scales. DB indexed on celular. Batch sync handles load smoothly |
+| wix-fetch Cookie Support unknown | Medium | High | Research during F4-T5. If cookies don't work, Render proxy is the answer |
 
 ---
 
 ## 8. Open Questions
 
-- [ ] **wix-fetch Cookie Support:** Does `wix-fetch` pass cookies the same way as Node.js `fetch`? Critical for gabineteonline login. Research during F4-T5.
-- [ ] **Wix CLI Auth Method:** Does `wix login` support non-interactive auth (API key)? Needed for CI/CD. Research during F3-T2.
-- [ ] **WhatsApp Selectors:** Exact selectors for WhatsApp button and widget on flaviovalle.com are unknown. Must inspect the live site during F5-T4.
-- [ ] **WhatsApp Redirect URL:** The current WhatsApp redirect URL needs to be captured from the live site.
-- [ ] **Alert System Implementation:** SMS/WhatsApp alerts are marked as "TODO" — exact Wix integration unresolved. May use Wix Automations, Twilio, or webhook.
-- [ ] **gabineteonline Session Expiry:** How long does the session cookie last? If short-lived, sync worker needs re-login logic.
-- [ ] **Suspicious Data Policy:** Should suspicious data be blocked from gabineteonline entirely, or synced with a flag for staff review?
-- [ ] **Secrets Manager Status:** Does the original flaviovalle.com site have Secrets Manager configured? Unknown until F3-T1 inspects.
+- [ ] **wix-fetch Cookie/xajax Support:** Can `wix-fetch` maintain session cookies and send xajax-formatted requests? Critical for F6-T1. If not → Render fallback (F6-T2)
+- [ ] **Wix CLI on Live Site:** Can we safely run `wix preview` on the live flaviovalle.com without affecting published content? Verify during F3-T1
+- [ ] **gabineteonline Session Expiry:** How long does the session cookie last? If short-lived, sync worker needs re-login logic
+- [ ] **Bairro → id_bairro Mapping:** The /participe dropdown has neighborhood names, gabineteonline uses numeric IDs (`id_bairro`). Need a mapping table
+- [ ] **Footer Form Decision:** Pending design team discussion. Options documented in F8-T1
+- [ ] **Suspicious Data Policy:** Block from gabineteonline entirely, or sync with flag for staff review?
+- [ ] **Checkbox Purpose:** The existing checkbox on /participe — what does it do? Consent? Newsletter?
+- [ ] **Secrets Manager:** Is Secrets Manager configured on flaviovalle.com? Needed for gabineteonline credentials
 
 ---
 
@@ -540,8 +561,6 @@ F4-T1 ─── DONE
 
 - [ ] Requirements reviewed by: _____________ Date: _________
 - [ ] Architecture reviewed by: _____________ Date: _________
-- [ ] Task ID mapping reviewed by: _____________ Date: _________
-- [ ] Parallelism confirmed by: _____________ Date: _________
 - [ ] Plan approved by: _____________ Date: _________
 
 ---
@@ -550,12 +569,111 @@ F4-T1 ─── DONE
 
 | Date | Change | Author |
 |------|--------|--------|
-| 2026-02-10 | Initial plan created (converted from legacy `.claude/plans/` format to standard) | Claude Opus 4.6 |
-| 2026-02-10 | Marked F1-T1, F1-T2, F2-T1 as complete (work done in prior sessions) | Claude Opus 4.6 |
-| 2026-02-10 | F4-T1 complete via TDD: field-mapper.js + gabinete-client.js (18 tests) | Claude Opus 4.6 |
-| 2026-02-11 | **v2 REWRITE:** Restructured F3 (dev environment setup), extracted F4 (pure logic), added F5 (pages), F6 (testing). Fixed dependency chain — 7 tasks now runnable in parallel. Added Wix CLI workflow, mock library, deprecation path for Node.js modules. Deferred production deployment to future `/discover` cycle. | Claude Opus 4.6 |
-| 2026-02-11 | F3-T4 complete via TDD: wix-mocks.js (4 mock factories: wix-data, wix-fetch, wix-location, wix-secrets). 34 tests passing. | Claude Opus 4.6 |
-| 2026-02-11 | F4-T4 complete via TDD: suspicious-data.js with CPF mod-11 check-digit algorithm. 51 tests passing (validateCPF + detectSuspicious). | Claude Opus 4.6 |
-| 2026-02-11 | F4-T2 complete via TDD: phone-validation.js (validatePhone + normalizePhone). 21 tests passing. | Claude Opus 4.6 |
-| 2026-02-11 | F4-T3 complete via TDD: email-validation.js (validateEmail with normalization, disposable detection, Brazilian TLDs). 41 tests passing. | Claude Opus 4.6 |
-| 2026-02-11 | F3-T1 complete via TDD: wix-dashboard-automator.js (loginToWix, duplicateSite, enableVelo, runSetup). 13 tests passing. Needs manual run to execute against real Wix Dashboard. | Claude Opus 4.6 |
+| 2026-02-10 | Initial plan created. F1, F2, F4-T1 marked complete | Claude Opus 4.6 |
+| 2026-02-11 | **v2 REWRITE:** Restructured F3, extracted F4, added F5/F6. Added Wix CLI workflow, mock library. Deferred production deployment | Claude Opus 4.6 |
+| 2026-02-11 | F3-T4, F4-T2, F4-T3, F4-T4, F3-T1 completed via TDD. 196 tests passing | Claude Opus 4.6 |
+| 2026-02-11 | Site exploration: mapped live site (7 pages, WhatsApp widget, /participe form). CRITICAL: duplication invalid, /participe is the target | Claude Opus 4.6 |
+| 2026-02-12 | Deep exploration: /participe fully mapped, Velo API researched, architecture simplified to single-page | Claude Opus 4.6 |
+| 2026-02-12 | **v3 REWRITE:** Single-page architecture on /participe. Live site with previews (not dev site). All gabineteonline fields with hidden toggles. "Nome Completo" + "Como gostaria de ser chamado?" (apelido). Batch sync (hours). Try Wix .jsw first, Render proxy fallback. xajax protocol corrects F2 assumptions. Footer redesign as design proposal only (F8) | Claude Opus 4.6 |
+
+---
+
+## 11. Site Exploration Findings (2026-02-11)
+
+### 11.1 Live Site Structure (flaviovalle.com)
+
+**Navigation (7 pages):**
+| Page | URL | Forms | WhatsApp | Notes |
+|------|-----|-------|----------|-------|
+| Início | `/` | ✅ 2-field footer (nome + phone) | ✅ OG button + floating widget | Main landing page |
+| Sobre | `/sobre` | ✅ 1 footer form (`comp-m4uhi0g18`) | ✅ floating widget persists | About page |
+| Atuação | `/atuacao` | ✅ 1 footer form (`comp-m4uhi0g18`) | ✅ floating widget persists | Activities page |
+| Saiu na Mídia | `/saiunamidia` | ✅ 1 footer form (`comp-m4uhi0g18`) | ✅ floating widget persists | Press page |
+| Notícias | `/noticias` | TBD | ✅ floating widget persists | Blog/news |
+| **Participe** | **`/participe`** | **✅ 2 forms — MAIN TARGET (see 11.6)** | ✅ floating widget persists | **Registration page** |
+| Termos de Uso | `/termos-de-uso-privacidade` | None expected | ✅ floating widget persists | Legal |
+
+### 11.2 WhatsApp Element Map
+
+**Element 1 — Floating Widget (intercept priority: HIGH)**
+- **Component ID:** `comp-m6ryux73`
+- **Pinned Layer:** `comp-m6ryux73-pinned-layer` (`position: fixed`, covers full viewport 0,0 → 1385x900)
+- **Link:** `<a class="j7pOnl" href="https://wa.me/5521978919938">`
+- **Intercept strategy:** Change link to `/participe` in Wix Editor
+
+**Element 2 — OG Static Button (intercept priority: MEDIUM)**
+- **Component ID:** `comp-m6rymfn3`
+- **Link:** `<a class="j7pOnl" href="https://wa.me/5521978919938">`
+- **Intercept strategy:** Same as floating widget
+
+**WhatsApp Number:** `+55 21 97891-9938`
+
+### 11.3 Existing Forms — Design Team Decision Pending
+
+**Site-Wide Footer Form (`comp-m4uhi0g18`):**
+- Verified on: `/sobre`, `/atuacao`, `/saiunamidia`, `/`
+- Fields: `nome-completo` + `phone` + "Enviar" button
+- **Decision pending** — see F8-T1 for options document
+
+### 11.4 Plan Corrections Applied in v3
+
+1. ~~Site duplication~~ → Work on live site with previews
+2. ~~3 new pages~~ → Single `/participe` page enhancement
+3. ~~Simple HTTP POST~~ → xajax protocol (with Turnstile CAPTCHA)
+4. ~~Real-time sync~~ → Batch sync (hours)
+5. ~~Dev site first~~ → Live site with preview verification
+
+### 11.5 Wix Tools Investigation
+
+**Explored:**
+- [x] masterPage.js (runs on ALL pages)
+- [x] $w() selector + onClick
+- [x] wix-location-frontend
+- [x] Backend .jsw modules
+- [x] Content Collections (wix-data)
+- [x] Secrets Manager (wix-secrets)
+
+**Still needs exploration during F3-T1:**
+- [ ] Velo Dev Mode status on live site
+- [ ] Existing Data Collections
+- [ ] Secrets Manager configuration
+- [ ] Page structure in editor (can we add Velo code to /participe?)
+
+### 11.6 `/participe` Page — Deep Form Mapping
+
+**Form 1 — Main Registration Form (`comp-m4wplov41`):**
+| # | Field Name | Type | Required | Notes |
+|---|-----------|------|----------|-------|
+| 1 | `nome` | text | ✅ | Will rename to "Nome Completo" |
+| 2 | `sobrenome` | text | ✅ | Last name |
+| 3 | `email` | email | ✅ | Email address |
+| 4 | `phone` | tel | ✅ | Phone number → maps to `celular` |
+| 5 | (checkbox) | checkbox | ❓ | Purpose TBD |
+| 6 | `collection_comp-m6z7d0i3` | select | ✅ | Bairro dropdown (Rio neighborhoods) |
+| 7 | `textarea_comp-m4wplove4` | textarea | ❓ | Free text → maps to `observacao` |
+
+**Form 2 — Footer Form (`comp-m4uhi0g18`):**
+- Same as all pages (2 fields). Decision pending (F8-T1).
+
+---
+
+## 12. Footer Form Redesign Options (for Design Team)
+
+**Current state:** Site-wide footer component `comp-m4uhi0g18` with 2 fields (nome-completo + phone) appears on ALL pages.
+
+**Option A: Delete entirely**
+- Remove footer forms from all pages
+- `/participe` is the only registration entry point
+- Simplest, cleanest
+
+**Option B: Wire to same backend**
+- Keep 2-field footer forms but connect to Registros DB
+- Creates partial records (nome + phone only, other fields empty)
+- Two entry points, one backend
+
+**Option C: Expand to match /participe**
+- Add more fields to footer forms (apelido, email, bairro)
+- Every page becomes a registration point
+- More complex, may feel intrusive
+
+**Recommendation:** Option A or B. Pending design team discussion.
