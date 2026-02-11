@@ -18,6 +18,8 @@ Enhance the existing `/participe` page on flaviovalle.com to intercept WhatsApp 
 
 **v3 Changes:** Single-page architecture on existing `/participe` (not 3 new pages). Develop on LIVE site with Wix previews (not blank dev site). All gabineteonline fields supported with hidden toggle. Batch sync (hours, not real-time). Try Wix `.jsw` sync first, Render proxy as fallback. xajax protocol discovery corrects F2 assumptions.
 
+**Prerequisite:** This project uses the **General Scraper** (`general_scraper/`) as its primary automation tool for browser-based Wix development tasks (login, navigation, Velo editing, preview access). See `docs/PLAN_GENERAL_SCRAPER.md` for the tool's implementation plan and available IPC commands.
+
 ---
 
 ## 2. Requirements Summary
@@ -235,7 +237,7 @@ Response format:
 
 ---
 
-### Feature 4: Pure Logic Modules (F4) — PARTIALLY COMPLETE
+### Feature 4: Pure Logic Modules (F4) — ✅ COMPLETE
 
 **User Story:** As a developer, I want tested, portable logic modules so that validation, mapping, and sync work correctly regardless of runtime.
 
@@ -246,22 +248,25 @@ Response format:
 | F4-T2 | Phone format validation module | None | S | ✅ Done (21 tests) |
 | F4-T3 | Email validation module | None | S | ✅ Done (41 tests) |
 | F4-T4 | Suspicious data detection module (CPF mod-11) | None | S | ✅ Done (51 tests) |
-| F4-T5 | Port field-mapper + gabinete-client to Wix Velo (.jsw) using wix-fetch | F3-T3, F4-T1 | M | ⬜ |
-| F4-T6 | Sync worker: try Wix .jsw xajax sync first, track syncStatus. If xajax fails from wix-fetch, document failure for Render fallback decision | F4-T5 | M | ⬜ |
+| F4-T5 | Port field-mapper + gabinete-client to Wix Velo (.jsw) using wix-fetch | F3-T3, F4-T1 | M | ✅ Done (33 tests: 17 mapper + 16 client) |
+| F4-T6 | Sync worker: login → map → submit with retry logic, track syncStatus | F4-T5 | M | ✅ Done (14 tests) |
 
-**Tests for remaining tasks:**
-- [ ] Test: F4-T5 — Ported gabinete-client uses `wix-fetch` mock correctly
-- [ ] Test: F4-T5 — Ported field-mapper maps ALL gabineteonline fields (not just original 15)
-- [ ] Test: F4-T5 — Field mapper handles `nome` + `sobrenome` → concatenated `nome` for gabineteonline
-- [ ] Test: F4-T6 — Sync worker formats xajax request correctly (xajax=CadastrarClienteDados&xajaxr=...)
-- [ ] Test: F4-T6 — Retry logic attempts 3 times with increasing delays
-- [ ] Test: F4-T6 — syncStatus updates correctly (pending → synced | failed)
-- [ ] Test: F4-T6 — Sync worker returns failure after 3 failed attempts
+**All tests complete:**
+- [x] Test: F4-T5 — Ported gabinete-client uses `wix-fetch` mock correctly
+- [x] Test: F4-T5 — Ported field-mapper maps ALL gabineteonline fields (not just original 15)
+- [x] Test: F4-T5 — Field mapper handles `nome` + `sobrenome` → concatenated `nome` for gabineteonline
+- [x] Test: F4-T6 — Sync worker formats xajax request correctly (xajax=CadastrarClienteDados&xajaxr=...)
+- [x] Test: F4-T6 — Retry logic attempts 3 times with increasing delays (1s, 2s, 4s exponential backoff)
+- [x] Test: F4-T6 — syncStatus updates correctly (pending → synced | failed)
+- [x] Test: F4-T6 — Sync worker returns failure after 3 failed attempts
+- [x] Test: F4-T6 — Login failure handled gracefully (no retries on auth errors)
+- [x] Test: F4-T6 — Batch sync queries pending records and syncs each
+- [x] Test: F4-T6 — Updates syncAttempts, lastSyncAt, gabineteId, syncError fields
 
-**IMPORTANT for F4-T5:** The field mapper must be updated to handle:
-- `nome` (Wix) + `sobrenome` (Wix) → concatenated `nome` (gabineteonline)
-- `apelido` from "Como gostaria de ser chamado?" field
-- ALL gabineteonline fields (not just the original 15 from v1)
+**Deliverables:**
+- `utils/velo-field-mapper.js` — Maps Wix fields → gabineteonline fields (all fields supported)
+- `utils/velo-gabinete-client.js` — Login + xajax submission via wix-fetch
+- `utils/sync-worker.js` — Batch sync with retry logic (3 attempts, exponential backoff)
 
 ---
 
@@ -405,8 +410,9 @@ tests/
 │   ├── gabinete-client.test.js       ✅ 18 tests
 │   ├── wix-mocks.test.js             ✅ 34 tests
 │   ├── wix-dashboard-automator.test.js ✅ 13 tests (reference only)
-│   ├── sync-worker.test.js           ⬜ (F4-T6)
-│   └── velo-field-mapper.test.js     ⬜ (F4-T5)
+│   ├── sync-worker.test.js           ✅ 14 tests (F4-T6)
+│   ├── velo-field-mapper.test.js     ✅ 17 tests (F4-T5)
+│   └── velo-gabinete-client.test.js  ✅ 16 tests (F4-T5)
 │
 ├── integration/    # Against preview URL or real services
 │   ├── gabinete-xajax-sync.test.js   ⬜ (F6-T1)
@@ -420,7 +426,7 @@ tests/
     └── registration-flow.md          ⬜ (F7-T1)
 ```
 
-**Current status:** 196 unit tests passing (committed), 32 additional passing (MockDataGenerator, uncommitted in general_scraper).
+**Current status:** 286 unit tests passing (committed).
 
 ### 5.2 TDD Checklist (Per Task)
 
@@ -471,14 +477,13 @@ npx playwright test tests/ui/ --config=preview.config.js
 
 ```
 Phase 1 (F1, F2) ─── DONE
-F4-T1..T4 ─── DONE (196 tests)
-F3-T3 (mocks) ─── DONE (34 tests)
+F4-T1..T4 ─── DONE
+F3-T3 (mocks) ─── DONE
+Phase 3: Velo Logic ─── DONE (F4-T5, F4-T6)
+Total: 286 unit tests passing
        │
-       ├──> Phase 2: CLI + DB Setup
+       ├──> Phase 2: CLI + DB Setup (NEXT)
        │    F3-T1 (Wix CLI on live site) → F3-T2 (Registros DB collection)
-       │
-       ├──> Phase 3: Velo Logic (needs Phase 2 + F4 done)
-       │    F4-T5 (port to Velo) → F4-T6 (sync worker)
        │
        ├──> Phase 4: /participe Enhancement (needs Phase 2 + Phase 3)
        │    F5-T1 (form fields) → F5-T2 (phone lookup) →
@@ -494,18 +499,22 @@ F3-T3 (mocks) ─── DONE (34 tests)
 ```
 
 ### Phase 1: Foundation ✅ COMPLETE
-**Completed:** F1-T1, F1-T2, F2-T1, F4-T1, F4-T2, F4-T3, F4-T4, F3-T3
-**Tests:** 196 passing
+**Completed:** F1-T1, F1-T2, F2-T1, F4-T1, F4-T2, F4-T3, F4-T4, F3-T3, F4-T5, F4-T6
+**Tests:** 286 passing
+
+### Phase 3: Velo Logic ✅ COMPLETE
+**Completed:** F4-T5 (velo-field-mapper + velo-gabinete-client), F4-T6 (sync-worker)
+**Tests:** 47 new tests (17 mapper + 16 client + 14 sync worker)
 
 ### Phase 2: CLI + DB Setup
 **Goal:** Connect Wix CLI to live site, create Registros collection
 - [ ] F3-T1: Wix CLI setup + auth on flaviovalle.com
 - [ ] F3-T2: Create Registros DB collection (all fields from Section 4.4)
 
-### Phase 3: Velo Logic
+### Phase 3: Velo Logic ✅ COMPLETE
 **Goal:** Port field mapper and sync worker to Wix Velo
-- [ ] F4-T5: Port field-mapper + gabinete-client to .jsw (handle nome+sobrenome→nome concatenation)
-- [ ] F4-T6: Sync worker with xajax format, retry logic, syncStatus tracking
+- [x] F4-T5: Port field-mapper + gabinete-client to .jsw (handle nome+sobrenome→nome concatenation)
+- [x] F4-T6: Sync worker with xajax format, retry logic, syncStatus tracking
 
 ### Phase 4: /participe Enhancement
 **Goal:** Transform /participe into full registration hub
