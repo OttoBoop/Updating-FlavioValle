@@ -5,9 +5,10 @@
  * to gabineteonline fields with metadata for labels, types, validation, and visibility.
  */
 
+import { WHATSAPP_URL } from './constants.js';
+
 // Form constants
 const FORM_ID = 'comp-m4wplov41';
-const WHATSAPP_REDIRECT_URL = 'https://wa.me/5521978919938';
 const SUBMIT_BUTTON_LABEL = 'Cadastrar e ir ao WhatsApp';
 
 // Field definitions (single source of truth)
@@ -244,7 +245,7 @@ export function getFormConfig() {
     cachedConfig = {
       formId: FORM_ID,
       fields: FIELD_DEFINITIONS,
-      whatsappRedirect: WHATSAPP_REDIRECT_URL,
+      whatsappRedirect: WHATSAPP_URL,
       submitButtonLabel: SUBMIT_BUTTON_LABEL,
     };
   }

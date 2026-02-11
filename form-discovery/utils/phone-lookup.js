@@ -9,6 +9,7 @@
 
 import { validatePhone } from './phone-validation.js';
 import { queryByCelular } from './wix-db-operations.js';
+import { WHATSAPP_URL } from './constants.js';
 
 // Route constants
 export const ROUTES = {
@@ -23,9 +24,6 @@ export const ACTIONS = {
   SHOW_WELCOME: 'showWelcome',
   SHOW_ERROR: 'showError'
 };
-
-// WhatsApp contact URL
-const WHATSAPP_URL = 'https://wa.me/5521978919938';
 
 /**
  * Main lookup function - validates phone and queries DB

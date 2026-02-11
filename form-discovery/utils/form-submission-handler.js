@@ -9,6 +9,7 @@ import { validatePhone } from './phone-validation.js';
 import { detectSuspicious } from './suspicious-data.js';
 import { getRequiredFields, mapFormDataToRegistros } from './participe-form-config.js';
 import { insertRegistration } from './wix-db-operations.js';
+import { WHATSAPP_URL } from './constants.js';
 
 /**
  * Validate form data
@@ -90,7 +91,7 @@ export async function submitRegistration(formData, wixData, wixLocation) {
     const record = await insertRegistration(wixData, mappedData);
 
     // Redirect to WhatsApp
-    wixLocation.to('https://wa.me/5521978919938');
+    wixLocation.to(WHATSAPP_URL);
 
     return {
       success: true,
