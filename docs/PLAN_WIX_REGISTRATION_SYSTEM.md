@@ -261,7 +261,7 @@ flaviovalle.com
 | F4-T1 | Build backend HTTP client for gabineteonline (Node.js reference) | F2-T1 | L | ✅ Done |
 | F4-T2 | Phone format validation module (Brazilian 11-digit + international) | None | S | ⬜ |
 | F4-T3 | Email validation module | None | S | ⬜ |
-| F4-T4 | Suspicious data detection module (fake patterns, spam) | None | S | ⬜ |
+| F4-T4 | Suspicious data detection module (fake patterns, spam, CPF algorithm) | None | S | ✅ Done |
 | F4-T5 | Port field-mapper + gabinete-client to Wix Velo (.jsw) using wix-fetch; deprecate Node.js versions | F3-T4, F4-T1 | M | ⬜ |
 | F4-T6 | Sync worker with retry logic (3 attempts, 1s/2s/4s backoff) and syncStatus tracking | F4-T5 | M | ⬜ |
 
@@ -273,8 +273,9 @@ flaviovalle.com
 - [ ] Test: F4-T2 — Phone validation rejects `12345`, `abcdefghijk`, empty string
 - [ ] Test: F4-T2 — Phone normalization strips formatting to digits-only
 - [ ] Test: F4-T3 — Email validation accepts `user@example.com`, rejects `not-email`
-- [ ] Test: F4-T4 — Suspicious detection flags `11111111111`, `00000000000`, `teste@teste.com`
-- [ ] Test: F4-T4 — Suspicious detection passes normal data through
+- [x] Test: F4-T4 — Suspicious detection flags `11111111111`, `00000000000`, `teste@teste.com`
+- [x] Test: F4-T4 — Suspicious detection passes normal data through
+- [x] Test: F4-T4 — CPF validation uses mod-11 check-digit algorithm
 - [ ] Test: F4-T5 — Ported gabinete-client uses `wix-fetch` mock correctly
 - [ ] Test: F4-T5 — Ported field-mapper behaves identically to Node.js version
 - [ ] Test: F4-T6 — Retry logic attempts 3 times with increasing delays (1s, 2s, 4s)
@@ -474,7 +475,7 @@ F4-T1 ─── DONE
 - [x] F3-T4: Wix mock library ✅ (unblocks F4-T5)
 - [ ] F4-T2: Phone validation
 - [ ] F4-T3: Email validation
-- [ ] F4-T4: Suspicious data detection
+- [x] F4-T4: Suspicious data detection ✅ (51 tests, CPF algorithm)
 - [ ] F3-T1: Dashboard automation script (one-time)
 - [ ] F3-T2: CLI setup + auth
 - [ ] F3-T3: DB collection via REST API
@@ -554,3 +555,4 @@ F4-T1 ─── DONE
 | 2026-02-10 | F4-T1 complete via TDD: field-mapper.js + gabinete-client.js (18 tests) | Claude Opus 4.6 |
 | 2026-02-11 | **v2 REWRITE:** Restructured F3 (dev environment setup), extracted F4 (pure logic), added F5 (pages), F6 (testing). Fixed dependency chain — 7 tasks now runnable in parallel. Added Wix CLI workflow, mock library, deprecation path for Node.js modules. Deferred production deployment to future `/discover` cycle. | Claude Opus 4.6 |
 | 2026-02-11 | F3-T4 complete via TDD: wix-mocks.js (4 mock factories: wix-data, wix-fetch, wix-location, wix-secrets). 34 tests passing. | Claude Opus 4.6 |
+| 2026-02-11 | F4-T4 complete via TDD: suspicious-data.js with CPF mod-11 check-digit algorithm. 51 tests passing (validateCPF + detectSuspicious). | Claude Opus 4.6 |
