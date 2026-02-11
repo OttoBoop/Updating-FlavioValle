@@ -1,3 +1,12 @@
+function cpfCheckDigit(digits, length) {
+  let sum = 0;
+  for (let i = 0; i < length; i++) {
+    sum += parseInt(digits[i]) * (length + 1 - i);
+  }
+  const remainder = sum % 11;
+  return remainder < 2 ? 0 : 11 - remainder;
+}
+
 /**
  * Validates a Brazilian CPF using the mod-11 check-digit algorithm.
  * Strips formatting (dots, dashes) before validation.
@@ -10,28 +19,10 @@ export function validateCPF(cpf) {
   const digits = cpf.replace(/[.\-]/g, '');
   if (digits.length !== 11 || !/^\d{11}$/.test(digits)) return false;
 
-  // All same digit = invalid
   if (/^(\d)\1{10}$/.test(digits)) return false;
 
-  // Check digit 1: multiply first 9 digits by 10..2, mod 11
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    sum += parseInt(digits[i]) * (10 - i);
-  }
-  let remainder = sum % 11;
-  const check1 = remainder < 2 ? 0 : 11 - remainder;
-  if (parseInt(digits[9]) !== check1) return false;
-
-  // Check digit 2: multiply first 10 digits by 11..2, mod 11
-  sum = 0;
-  for (let i = 0; i < 10; i++) {
-    sum += parseInt(digits[i]) * (11 - i);
-  }
-  remainder = sum % 11;
-  const check2 = remainder < 2 ? 0 : 11 - remainder;
-  if (parseInt(digits[10]) !== check2) return false;
-
-  return true;
+  return parseInt(digits[9]) === cpfCheckDigit(digits, 9)
+      && parseInt(digits[10]) === cpfCheckDigit(digits, 10);
 }
 
 export function detectSuspicious(data) {
