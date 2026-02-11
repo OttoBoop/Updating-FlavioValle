@@ -227,14 +227,14 @@ Response format:
 **Tasks:**
 | ID | Task | Dependencies | Effort | Status |
 |----|------|--------------|--------|--------|
-| F3-T1 | ~~Dashboard automation~~ **REVISED:** Install Wix CLI, authenticate (`wix login`), connect to flaviovalle.com, verify `wix preview` works | F1-T2 | S | ⬜ Needs redo |
-| F3-T2 | Create `Registros` DB collection via Wix Dashboard or REST API (all gabineteonline fields, syncStatus, indexes on celular) | F3-T1 | M | ⬜ |
+| F3-T1 | ~~Dashboard automation~~ **REVISED:** Install Wix CLI, authenticate (`wix login`), connect to flaviovalle.com, verify `wix preview` works | F1-T2 | S | ✅ Done (12 tests) |
+| F3-T2 | Create `Registros` DB collection via Wix Dashboard or REST API (all gabineteonline fields, syncStatus, indexes on celular) | F3-T1 | M | ✅ Done (17 tests) |
 | F3-T3 | Build Wix API mock library (wix-data, wix-fetch, wix-location, wix-secrets) for Jest | None | M | ✅ Done (34 tests) |
 
 **Notes:**
 - F3-T1 is simplified: just CLI setup, no Dashboard automation script needed
 - F3-T2 `Registros` schema must include ALL gabineteonline fields (see Section 4.4 for field list)
-- Old F3-T1 (wix-dashboard-automator.js, 13 tests) is preserved as reference but not used
+- Old F3-T1 (wix-dashboard-automator.js, 13 tests) was deleted (deprecated v1 approach)
 
 ---
 
@@ -410,7 +410,6 @@ tests/
 │   ├── field-mapper.test.js          ✅ 18 tests
 │   ├── gabinete-client.test.js       ✅ 18 tests
 │   ├── wix-mocks.test.js             ✅ 34 tests
-│   ├── wix-dashboard-automator.test.js ✅ 13 tests (reference only)
 │   ├── sync-worker.test.js           ✅ 14 tests (F4-T6)
 │   ├── velo-field-mapper.test.js     ✅ 17 tests (F4-T5)
 │   ├── velo-gabinete-client.test.js  ✅ 16 tests (F4-T5)
@@ -431,7 +430,7 @@ tests/
     └── registration-flow.md          ⬜ (F7-T1)
 ```
 
-**Current status:** 345 unit tests passing (committed).
+**Current status:** 332 unit tests passing (committed).
 
 ### 5.2 TDD Checklist (Per Task)
 

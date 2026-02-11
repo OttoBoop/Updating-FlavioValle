@@ -116,9 +116,9 @@ describe('F3-T1: Wix Environment Setup', () => {
       expect(playwrightExtraOutput).toContain('playwright-extra');
     });
 
-    it('should have browser setup script available', () => {
-      const setupScriptPath = join(process.cwd(), 'run-wix-setup.js');
-      expect(existsSync(setupScriptPath)).toBe(true);
+    it('should have credential decryption utility available', () => {
+      const decryptPath = join(process.cwd(), 'utils', 'decrypt-credentials.js');
+      expect(existsSync(decryptPath)).toBe(true);
     });
   });
 
