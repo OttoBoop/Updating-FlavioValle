@@ -2,6 +2,43 @@
 // Uses wix-fetch for HTTP requests
 // Implements xajax protocol for form submission
 
+// Constants
+const GABINETE_BASE_URL = 'https://www.gabineteonline1.com.br/flaviovalle';
+const GABINETE_LOGIN_URL = `${GABINETE_BASE_URL}/`;
+const GABINETE_SUBMIT_URL = `${GABINETE_BASE_URL}/cadastroclientes_dados.php`;
+const XAJAX_FUNCTION_NAME = 'CadastrarClienteDados';
+const CONTENT_TYPE_FORM = 'application/x-www-form-urlencoded';
+
+/**
+ * Extract cookies from HTTP response headers
+ * @param {Object} headers - Response headers object
+ * @returns {string[]} Array of cookie strings
+ */
+function extractCookies(headers) {
+  const cookies = [];
+  if (headers['set-cookie']) {
+    const setCookie = headers['set-cookie'];
+    if (Array.isArray(setCookie)) {
+      cookies.push(...setCookie);
+    } else if (typeof setCookie === 'string') {
+      cookies.push(setCookie);
+    }
+  }
+  return cookies;
+}
+
+/**
+ * Build xajax protocol request body
+ * @param {Object} formData - Form data object
+ * @returns {string} URL-encoded xajax request body
+ */
+function buildXajaxBody(formData) {
+  const timestamp = Date.now();
+  const jsonFormData = JSON.stringify(formData);
+  const encodedFormData = encodeURIComponent(jsonFormData);
+  return `xajax=${XAJAX_FUNCTION_NAME}&xajaxr=${timestamp}&xajaxargs[]=${encodedFormData}`;
+}
+
 /**
  * Login to gabineteonline and get session cookies
  * @param {string} username - Username
@@ -10,15 +47,14 @@
  * @returns {Promise<{success: boolean, cookies: string[]}>}
  */
 export async function login(username, password, wixFetch) {
-  // Build form data
   const formData = new URLSearchParams();
   formData.append('txtusuario', username);
   formData.append('txtsenha', password);
 
-  const response = await wixFetch.fetch('https://www.gabineteonline1.com.br/flaviovalle/', {
+  const response = await wixFetch.fetch(GABINETE_LOGIN_URL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type': CONTENT_TYPE_FORM
     },
     body: formData.toString()
   });
@@ -27,17 +63,7 @@ export async function login(username, password, wixFetch) {
     throw new Error(`Login failed: ${response.status}`);
   }
 
-  // Extract cookies from response headers
-  const cookies = [];
-  if (response.headers['set-cookie']) {
-    // In real wix-fetch, set-cookie might be a string or array
-    const setCookie = response.headers['set-cookie'];
-    if (Array.isArray(setCookie)) {
-      cookies.push(...setCookie);
-    } else if (typeof setCookie === 'string') {
-      cookies.push(setCookie);
-    }
-  }
+  const cookies = extractCookies(response.headers);
 
   return { success: true, cookies };
 }
@@ -51,28 +77,16 @@ export async function login(username, password, wixFetch) {
  */
 export async function submitRegistration(cookies, formData, wixFetch) {
   try {
-    // Generate timestamp for xajax request
-    const timestamp = Date.now();
+    const body = buildXajaxBody(formData);
 
-    // Encode form data as JSON for xajax
-    const jsonFormData = JSON.stringify(formData);
-    const encodedFormData = encodeURIComponent(jsonFormData);
-
-    // Build xajax protocol request body
-    // Format: xajax=CadastrarClienteDados&xajaxr=[timestamp]&xajaxargs[]=[encoded-form-data]
-    const body = `xajax=CadastrarClienteDados&xajaxr=${timestamp}&xajaxargs[]=${encodedFormData}`;
-
-    const response = await wixFetch.fetch(
-      'https://www.gabineteonline1.com.br/flaviovalle/cadastroclientes_dados.php',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': cookies.join('; ')
-        },
-        body: body
-      }
-    );
+    const response = await wixFetch.fetch(GABINETE_SUBMIT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': CONTENT_TYPE_FORM,
+        'Cookie': cookies.join('; ')
+      },
+      body: body
+    });
 
     if (!response.ok) {
       return { success: false, error: `HTTP ${response.status}` };
