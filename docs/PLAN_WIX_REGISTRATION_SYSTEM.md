@@ -287,19 +287,19 @@ Response format:
 **Tasks:**
 | ID | Task | Dependencies | Effort | Status |
 |----|------|--------------|--------|--------|
-| F5-T1 | Enhance `/participe` form: rename nome→"Nome Completo", add "Como gostaria de ser chamado?" (apelido), add all gabineteonline fields as hidden-by-default toggleable sections | F3-T2 | L | ⬜ |
-| F5-T2 | Add phone lookup logic: on page load or phone input blur, query Registros DB. If returning → show welcome back state. If new → show full form | F3-T2, F4-T2 | M | ⬜ |
+| F5-T1 | Enhance `/participe` form: rename nome→"Nome Completo", add "Como gostaria de ser chamado?" (apelido), add all gabineteonline fields as hidden-by-default toggleable sections | F3-T2 | L | ✅ Done (20 tests) |
+| F5-T2 | Add phone lookup logic: on page load or phone input blur, query Registros DB. If returning → show welcome back state. If new → show full form | F3-T2, F4-T2 | M | ✅ Done (17 tests) |
 | F5-T3 | Add form submission handler: validate → save to Wix DB with syncStatus:"pending" → redirect to WhatsApp | F5-T1, F5-T2, F4-T3, F4-T4 | M | ⬜ |
 | F5-T4 | Change WhatsApp widget link to `/participe` in Wix Editor. Add masterPage.js code for returning-user bypass (registered users go directly to WhatsApp) | F5-T2 | M | ⬜ |
 
 **Tests:**
-- [ ] Test: Phone lookup returns correct routing (existing → welcome, new → register)
-- [ ] Test: Registration form validates required fields (Nome Completo, Apelido, Celular)
-- [ ] Test: "Nome Completo" + "Sobrenome" concatenated before save
-- [ ] Test: Hidden fields can be toggled visible via code flag
+- [x] Test: Phone lookup returns correct routing (existing → welcome, new → register)
+- [x] Test: Registration form validates required fields (Nome Completo, Apelido, Celular)
+- [x] Test: "Nome Completo" + "Sobrenome" concatenated before save
+- [x] Test: Hidden fields can be toggled visible via code flag
 - [ ] Test: Form data saved to Wix DB with syncStatus: "pending"
 - [ ] Test: WhatsApp redirect fires after successful registration
-- [ ] Test: Returning user sees welcome message with their apelido
+- [x] Test: Returning user sees welcome message with their apelido
 - [ ] Test: Error state preserves form data for retry
 
 ### 4.4 Registros DB Schema (for F3-T2 and F5)
@@ -412,7 +412,10 @@ tests/
 │   ├── wix-dashboard-automator.test.js ✅ 13 tests (reference only)
 │   ├── sync-worker.test.js           ✅ 14 tests (F4-T6)
 │   ├── velo-field-mapper.test.js     ✅ 17 tests (F4-T5)
-│   └── velo-gabinete-client.test.js  ✅ 16 tests (F4-T5)
+│   ├── velo-gabinete-client.test.js  ✅ 16 tests (F4-T5)
+│   ├── participe-form-config.test.js ✅ 20 tests (F5-T1)
+│   ├── phone-lookup.test.js          ✅ 17 tests (F5-T2)
+│   └── wix-db-operations.test.js     ✅ 17 tests (F3-T2)
 │
 ├── integration/    # Against preview URL or real services
 │   ├── gabinete-xajax-sync.test.js   ⬜ (F6-T1)
@@ -426,7 +429,7 @@ tests/
     └── registration-flow.md          ⬜ (F7-T1)
 ```
 
-**Current status:** 286 unit tests passing (committed).
+**Current status:** 323 unit tests passing (committed).
 
 ### 5.2 TDD Checklist (Per Task)
 
@@ -518,8 +521,8 @@ Total: 286 unit tests passing
 
 ### Phase 4: /participe Enhancement
 **Goal:** Transform /participe into full registration hub
-- [ ] F5-T1: Enhance form (Nome Completo, Apelido, hidden toggleable fields)
-- [ ] F5-T2: Phone lookup (returning user detection)
+- [x] F5-T1: Enhance form (Nome Completo, Apelido, hidden toggleable fields) — 20 tests
+- [x] F5-T2: Phone lookup (returning user detection) — 17 tests
 - [ ] F5-T3: Form submission handler (validate → save → redirect WhatsApp)
 - [ ] F5-T4: WhatsApp widget link change + masterPage.js for registered-user bypass
 
@@ -584,6 +587,8 @@ Total: 286 unit tests passing
 | 2026-02-11 | Site exploration: mapped live site (7 pages, WhatsApp widget, /participe form). CRITICAL: duplication invalid, /participe is the target | Claude Opus 4.6 |
 | 2026-02-12 | Deep exploration: /participe fully mapped, Velo API researched, architecture simplified to single-page | Claude Opus 4.6 |
 | 2026-02-12 | **v3 REWRITE:** Single-page architecture on /participe. Live site with previews (not dev site). All gabineteonline fields with hidden toggles. "Nome Completo" + "Como gostaria de ser chamado?" (apelido). Batch sync (hours). Try Wix .jsw first, Render proxy fallback. xajax protocol corrects F2 assumptions. Footer redesign as design proposal only (F8) | Claude Opus 4.6 |
+| 2026-02-11 | Wave 2: F3-T2 (Registros DB ops, 17 tests) + F4-T6 (sync worker, 14 tests). 286 tests passing | Claude Opus 4.6 |
+| 2026-02-11 | Wave 3: F5-T1 (form config, 20 tests) + F5-T2 (phone lookup, 17 tests). 323 tests passing | Claude Opus 4.6 |
 
 ---
 
