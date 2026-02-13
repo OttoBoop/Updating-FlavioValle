@@ -1,7 +1,7 @@
 // Workaround for Jest toContain + expect.stringContaining issue with ES modules
 // Override toContain to handle string matchers properly
 
-import { expect } from '@jest/globals';
+import { expect, jest } from '@jest/globals';
 
 expect.extend({
   toContain(received, expected) {

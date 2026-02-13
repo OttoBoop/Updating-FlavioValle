@@ -4,6 +4,13 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^wix-data$': '<rootDir>/utils/wix-data-mock.js'
+  },
+  extensionsToTreatAsEsm: ['.jsw'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
   },
   collectCoverageFrom: [
     '../scripts/**/*.js',

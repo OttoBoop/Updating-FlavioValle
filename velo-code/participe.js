@@ -1,8 +1,6 @@
 // participe.js - Main page code for /participe
-import wixData from 'wix-data';
 import wixLocation from 'wix-location';
 import { getCurrentUserLocation, lookupAddressFromCEP, formatCEP } from 'public/location-utils.js';
-import { lookupUserByPhone, saveRegistration } from 'backend/participedb.jsw';
 import { validateField, validationRules } from 'public/validation-utils.js';
 import { combineNames } from 'public/text-utils.js';
 
@@ -38,9 +36,6 @@ async function initializeAutoFill() {
 }
 
 function setupFormInteractions() {
-    // Add asterisks to required field labels - matches gabineteonline style
-    addAsterisksToRequiredFields();
-
     // Phone lookup on blur
     $w('#celular').onBlur(async (event) => {
         const phone = event.target.value;
@@ -114,15 +109,10 @@ async function handlePhoneLookup(phone) {
         const cleanPhone = phone.replace(/\D/g, '');
         console.log('Looking up phone:', cleanPhone);
 
-        const existingUser = await lookupUserByPhone(cleanPhone);
-
-        if (existingUser) {
-            console.log('Found existing user:', existingUser.apelido);
-            showReturningUserFlow(existingUser);
-        } else {
-            console.log('New user, showing registration form');
-            showNewUserFlow();
-        }
+        // TODO: Implement phone lookup when database is available
+        // For now, always show new user flow
+        console.log('New user, showing registration form');
+        showNewUserFlow();
     } catch (error) {
         console.error('Phone lookup failed:', error);
         showNewUserFlow(); // Default to new user flow
@@ -130,56 +120,14 @@ async function handlePhoneLookup(phone) {
 }
 
 function showReturningUserFlow(user) {
-    // Hide registration form
-    $w('#registrationForm').hide();
-
-    // Show welcome back section
-    $w('#welcomeBackSection').show();
-
-    // Populate welcome message
-    $w('#welcomeMessage').text = `Bem-vindo de volta, ${user.apelido || 'amigo'}!`;
-
-    // Show existing data (read-only)
-    if (user.nomeCompleto) {
-        $w('#existingNome').text = user.nomeCompleto;
-        $w('#existingNome').show();
-    }
-
-    if (user.email) {
-        $w('#existingEmail').text = user.email;
-        $w('#existingEmail').show();
-    }
-
-    // Setup update button
-    $w('#updateDataButton').onClick(() => {
-        showUpdateForm(user);
-    });
+    // TODO: Implement returning user flow when database is available
+    // For now, always show new user flow
+    showNewUserFlow();
 }
 
 function showUpdateForm(user) {
-    // Hide welcome section
-    $w('#welcomeBackSection').hide();
-
-    // Show registration form with existing data
-    $w('#registrationForm').show();
-
-    // Pre-fill form with existing data
-    $w('#apelido').value = user.apelido || '';
-    $w('#sobrenome').value = user.sobrenome || '';
-    $w('#nome').value = user.nome || '';
-    $w('#celular').value = user.celular || '';
-    $w('#email').value = user.email || '';
-
-    // Optional fields
-    $w('#cpf').value = user.cpf || '';
-    $w('#dataNascimento').value = user.dataNascimento || '';
-    $w('#cep').value = user.cep || '';
-    $w('#endereco').value = user.endereco || '';
-    $w('#numero').value = user.numero || '';
-    $w('#complemento').value = user.complemento || '';
-    $w('#bairro').value = user.bairro || '';
-    $w('#cidade').value = user.cidade || '';
-    $w('#uf').value = user.uf || '';
+    // TODO: Implement update form when database is available
+    showNewUserFlow();
 }
 
 function showNewUserFlow() {
@@ -242,11 +190,10 @@ async function handleFormSubmission() {
 
         // Show loading state
         $w('#submitButton').disable();
-        $w('#submitButton').label = 'Salvando...';
+        $w('#submitButton').label = 'Enviando...';
 
-        // Save to database
-        const result = await saveRegistration(formData);
-        console.log('Registration saved:', result);
+        // TODO: Save to database when backend is available
+        console.log('Form data collected:', formData);
 
         // Redirect to WhatsApp
         wixLocation.to('https://wa.me/5521978919938');
@@ -404,23 +351,6 @@ async function handleCEPLookup(cep) {
         // Hide loading indicator
         $w('#cepLoading').hide();
     }
-}
-
-// Add asterisks (*) to required field labels - matches gabineteonline style
-function addAsterisksToRequiredFields() {
-    // Required fields that match gabineteonline (Nome*, Celular*, E-mail*)
-    // Plus our additional required fields: CEP*, Data de Nascimento*
-    const requiredFields = ['nome', 'celular', 'email', 'cep', 'dataNascimento'];
-    
-    requiredFields.forEach(fieldId => {
-        const labelElement = $w(`#${fieldId}Label`);
-        if (labelElement) {
-            const currentLabel = labelElement.text || '';
-            if (!currentLabel.includes('*')) {
-                labelElement.text = currentLabel + ' *';
-            }
-        }
-    });
 }
 
 // Helper functions for bairro options (would be in a separate utility)

@@ -1,0 +1,123 @@
+import { insert, query } from 'wix-data';
+
+/**
+ * Normalizes a phone number to the standard Brazilian format
+ * @param {string} phoneNumber - Raw phone number input
+ * @returns {string} - Normalized phone number in (XX) XXXXX-XXXX format
+ */
+function normalizePhoneNumber(phoneNumber) {
+  if (!phoneNumber) return phoneNumber;
+
+  // Remove all non-digit characters
+  const digitsOnly = phoneNumber.replace(/\D/g, '');
+
+  // Handle 11-digit mobile numbers (with 9 prefix)
+  if (digitsOnly.length === 11 && digitsOnly[2] === '9') {
+    return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7)}`;
+  }
+
+  // Handle 10-digit landline numbers
+  if (digitsOnly.length === 10) {
+    return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 6)}-${digitsOnly.slice(6)}`;
+  }
+
+  // Handle 11-digit numbers that might be mobile without 9 prefix (Rio, etc.)
+  if (digitsOnly.length === 11) {
+    return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7)}`;
+  }
+
+  // Return original if it doesn't match expected patterns
+  return phoneNumber;
+}
+
+/**
+ * Validates required fields for registration
+ * @param {Object} formData - Form submission data
+ * @throws {Error} - If validation fails
+ */
+function validateRegistrationData(formData) {
+  const requiredFields = ['apelido', 'celular', 'email'];
+
+  for (const field of requiredFields) {
+    if (!formData[field] || formData[field].trim() === '') {
+      throw new Error(`Campo obrigatório não preenchido: ${field}`);
+    }
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(formData.email)) {
+    throw new Error('Email inválido');
+  }
+
+  // Basic phone validation (must have at least 10 digits after normalization)
+  const normalizedPhone = normalizePhoneNumber(formData.celular);
+  const phoneDigits = normalizedPhone.replace(/\D/g, '');
+  if (phoneDigits.length < 10) {
+    throw new Error('Número de telefone inválido');
+  }
+}
+
+/**
+ * Saves a new registration to the database
+ * @param {Object} formData - Registration form data
+ * @returns {Promise<Object>} - Saved registration record
+ */
+export async function saveRegistration(formData) {
+  try {
+    // Validate input data
+    validateRegistrationData(formData);
+
+    // Normalize phone number
+    const normalizedPhone = normalizePhoneNumber(formData.celular);
+
+    // Prepare data for database with sync tracking fields
+    const registrationData = {
+      ...formData,
+      celular: normalizedPhone, // Store normalized phone
+      syncStatus: 'pending',
+      syncAttempts: 0,
+      lastSyncAt: null,
+      gabineteId: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // Save to database
+    const result = await insert('Registros', registrationData);
+    return result;
+
+  } catch (error) {
+    // Re-throw validation errors as-is
+    if (error.message.includes('obrigatório') ||
+        error.message.includes('inválido') ||
+        error.message.includes('telefone')) {
+      throw error;
+    }
+
+    // Wrap database errors
+    throw new Error(`Erro ao salvar registro: ${error.message}`);
+  }
+}
+
+/**
+ * Looks up a user by phone number
+ * @param {string} phoneNumber - Phone number to search for
+ * @returns {Promise<Object|null>} - User record or null if not found
+ */
+export async function lookupUserByPhone(phoneNumber) {
+  try {
+    // Normalize phone number for lookup
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+    // Query database
+    const result = await query('Registros')
+      .eq('celular', normalizedPhone)
+      .find();
+
+    return result.items.length > 0 ? result.items[0] : null;
+
+  } catch (error) {
+    throw new Error(`Erro ao buscar usuário: ${error.message}`);
+  }
+}
