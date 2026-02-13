@@ -17,6 +17,8 @@
 - [x] Portuguese validation messages
 - [x] Form validation rules
 - [x] Field mapping to gabineteonline schema
+- [x] CEP as required field
+- [x] Birth date as required field
 
 ---
 
@@ -73,12 +75,24 @@
 - **Validation:** Required, valid email format
 - **Notes:** Used for notifications (future feature)
 
+#### `cep` — "CEP *"
+- **Auto-fill:** None (user enters CEP)
+- **UX:** Input field, placeholder "Digite seu CEP"
+- **Validation:** Required, CEP format (99999-999 or 99999999)
+- **Notes:** Triggers address auto-fill, required for complete registration
+
+#### `dataNascimento` — "Data de Nascimento *"
+- **Auto-fill:** None (privacy-sensitive)
+- **UX:** Date picker, placeholder "DD/MM/AAAA"
+- **Validation:** Required, valid date format, reasonable age range
+- **Notes:** Maps to gabineteonline `datanascimento`, required for voter data integration
+
 ### 2.2 Optional Fields (Hidden by Default)
 
 #### Auto-Fill Candidates
 | Field | Auto-Fill Strategy | Trigger |
 |-------|-------------------|---------|
-| `cep` | User input only | Manual entry |
+
 | `endereco` | CEP lookup service | After CEP entered |
 | `numero` | User input | Manual entry |
 | `complemento` | User input | Manual entry |
@@ -233,7 +247,8 @@ function setupFormInteractions() {
 // Add asterisks (*) to required field labels - matches gabineteonline style
 function addAsterisksToRequiredFields() {
     // Required fields that match gabineteonline (Nome*, Celular*, E-mail*)
-    const requiredFields = ['nome', 'celular', 'email'];
+    // Plus our additional required fields: CEP*, Data de Nascimento*
+    const requiredFields = ['nome', 'celular', 'email', 'cep', 'dataNascimento'];
     
     requiredFields.forEach(fieldId => {
         const labelElement = $w(`#${fieldId}Label`);

@@ -33,9 +33,9 @@ export const validationRules = {
         message: 'Email é obrigatório'
     },
     cep: {
-        required: false,
+        required: true,
         pattern: /^\d{5}-\d{3}$|^\d{8}$/,
-        message: 'CEP inválido. Use formato: 99999-999'
+        message: 'CEP é obrigatório. Use formato: 99999-999'
     },
     cpf: {
         required: false,
@@ -43,9 +43,9 @@ export const validationRules = {
         message: 'CPF inválido. Use formato: 999.999.999-99'
     },
     dataNascimento: {
-        required: false,
+        required: true,
         pattern: /^\d{2}\/\d{2}\/\d{4}$/,
-        message: 'Data inválida. Use formato: DD/MM/AAAA'
+        message: 'Data de nascimento é obrigatória. Use formato: DD/MM/AAAA'
     },
     titulo: {
         required: false,

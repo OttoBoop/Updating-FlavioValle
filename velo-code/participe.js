@@ -409,7 +409,8 @@ async function handleCEPLookup(cep) {
 // Add asterisks (*) to required field labels - matches gabineteonline style
 function addAsterisksToRequiredFields() {
     // Required fields that match gabineteonline (Nome*, Celular*, E-mail*)
-    const requiredFields = ['nome', 'celular', 'email'];
+    // Plus our additional required fields: CEP*, Data de Nascimento*
+    const requiredFields = ['nome', 'celular', 'email', 'cep', 'dataNascimento'];
     
     requiredFields.forEach(fieldId => {
         const labelElement = $w(`#${fieldId}Label`);
