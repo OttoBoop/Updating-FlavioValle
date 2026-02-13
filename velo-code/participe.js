@@ -38,9 +38,6 @@ async function initializeAutoFill() {
 }
 
 function setupFormInteractions() {
-    // Add asterisks to required field labels
-    addAsterisksToRequiredFields();
-
     // Phone lookup on blur
     $w('#celular').onBlur(async (event) => {
         const phone = event.target.value;
@@ -365,23 +362,6 @@ function updateNomeCompleto() {
     if (nomeElement) {
         nomeElement.value = nomeCompleto;
     }
-}
-
-// Add asterisks (*) to required field labels
-function addAsterisksToRequiredFields() {
-    const requiredFields = ['apelido', 'sobrenome', 'nome', 'celular', 'email'];
-
-    requiredFields.forEach(fieldId => {
-        const labelElement = $w(`#${fieldId}Label`);
-        if (labelElement) {
-            const currentLabel = labelElement.text || '';
-            if (!currentLabel.includes('*')) {
-                labelElement.text = currentLabel + ' *';
-            }
-        }
-    });
-}
-
 // Handle CEP lookup and auto-fill address fields
 async function handleCEPLookup(cep) {
     try {
