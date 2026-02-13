@@ -38,6 +38,9 @@ async function initializeAutoFill() {
 }
 
 function setupFormInteractions() {
+    // Add asterisks to required field labels - matches gabineteonline style
+    addAsterisksToRequiredFields();
+
     // Phone lookup on blur
     $w('#celular').onBlur(async (event) => {
         const phone = event.target.value;
@@ -401,6 +404,22 @@ async function handleCEPLookup(cep) {
         // Hide loading indicator
         $w('#cepLoading').hide();
     }
+}
+
+// Add asterisks (*) to required field labels - matches gabineteonline style
+function addAsterisksToRequiredFields() {
+    // Required fields that match gabineteonline (Nome*, Celular*, E-mail*)
+    const requiredFields = ['nome', 'celular', 'email'];
+    
+    requiredFields.forEach(fieldId => {
+        const labelElement = $w(`#${fieldId}Label`);
+        if (labelElement) {
+            const currentLabel = labelElement.text || '';
+            if (!currentLabel.includes('*')) {
+                labelElement.text = currentLabel + ' *';
+            }
+        }
+    });
 }
 
 // Helper functions for bairro options (would be in a separate utility)

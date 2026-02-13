@@ -4,18 +4,19 @@
 **Page:** `/participe` on flaviovalle.com
 **Goal:** Smart auto-fill of required fields while maintaining user control
 
-## Status: 🔄 AWAITING REQUIRED FIELD VISUAL STYLE
+## Status: ✅ IMPLEMENTED (Asterisks Added)
 
 **Last Updated:** 2026-02-13
 **Code Location:** `velo-code/participe.js` + `velo-code/public/validation-utils.js`
-**Deployment Status:** Need to identify how required fields are visually indicated in gabineteonline
+**Deployment Status:** Ready for Wix deployment and testing
 
 ### ✅ Completed Features
 - [x] Name field separation (first name + surname → full name)
 - [x] CEP-based address auto-fill (ViaCEP integration)
+- [x] Required field asterisks (*) display - matches gabineteonline style
+- [x] Portuguese validation messages
 - [x] Form validation rules
 - [x] Field mapping to gabineteonline schema
-- [ ] Required field visual indicators (need to match gabineteonline style)
 
 ---
 
@@ -45,7 +46,7 @@
 - **Auto-fill:** None (user enters first name)
 - **UX:** Input field, placeholder "Digite seu primeiro nome"
 - **Validation:** Required, 1-30 chars, letters only
-- **Notes:** Maps to gabineteonline `apelido` field
+- **Notes:** Maps to gabineteonline `Apelido` (optional field)
 
 #### `sobrenome` — "Sobrenome"
 - **Auto-fill:** None (user enters surname)
@@ -53,20 +54,20 @@
 - **Validation:** Required, 1-200 chars, letters + spaces only
 - **Notes:** New field for surname separation
 
-#### `nome` — "Nome Completo" (Auto-generated)
+#### `nome` — "Nome Completo *"
 - **Auto-fill:** `apelido` + `sobrenome` (joined with space)
 - **Logic:** When both fields change → combine into full name
 - **UX:** Read-only display, updates automatically
 - **Validation:** Auto-generated, no manual validation needed
-- **Notes:** Maps to gabineteonline `nome` field
+- **Notes:** Maps to gabineteonline `Nome*` (required field)
 
-#### `celular` — "Celular"
+#### `celular` — "Celular *"
 - **Auto-fill:** None (allow international numbers)
 - **UX:** Free-form input, placeholder "Digite seu número de celular"
 - **Validation:** Required, any phone format accepted
 - **Notes:** Primary lookup key for returning users
 
-#### `email` — "Email"
+#### `email` — "Email *"
 - **Auto-fill:** Browser autofill (passive)
 - **UX:** Standard email input, browser suggestions enabled
 - **Validation:** Required, valid email format
@@ -221,6 +222,26 @@ function setupFormInteractions() {
                 showReturningUserFlow(existingUser);
             } else {
                 showNewUserFlow();
+            }
+        }
+    });
+}
+```
+
+#### Asterisk Display Function
+```javascript
+// Add asterisks (*) to required field labels - matches gabineteonline style
+function addAsterisksToRequiredFields() {
+    // Required fields that match gabineteonline (Nome*, Celular*, E-mail*)
+    const requiredFields = ['nome', 'celular', 'email'];
+    
+    requiredFields.forEach(fieldId => {
+        const labelElement = $w(`#${fieldId}Label`);
+        if (labelElement) {
+            const currentLabel = labelElement.text;
+            // Add asterisk if not already present
+            if (!currentLabel.includes('*')) {
+                labelElement.text = currentLabel + ' *';
             }
         }
     });
