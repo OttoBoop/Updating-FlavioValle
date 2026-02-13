@@ -1,0 +1,241 @@
+// backend/participedb.jsw - Database operations for participe page
+
+import wixData from 'wix-data';
+
+/**
+ * Look up user by phone number
+ * @param {string} phone - Clean phone number (digits only)
+ * @returns {Promise<Object|null>} User data or null
+ */
+export async function lookupUserByPhone(phone) {
+    try {
+        if (!phone || typeof phone !== 'string') {
+            console.error('Invalid phone number for lookup:', phone);
+            return null;
+        }
+
+        // Clean the phone number
+        const cleanPhone = phone.replace(/\D/g, '');
+        console.log('Looking up phone:', cleanPhone);
+
+        // Query the Registros collection
+        const results = await wixData.query('Registros')
+            .eq('celular', cleanPhone)
+            .find();
+
+        if (results.items && results.items.length > 0) {
+            const user = results.items[0];
+            console.log('Found user:', user.apelido || user.nomeCompleto);
+            return user;
+        }
+
+        console.log('No user found for phone:', cleanPhone);
+        return null;
+
+    } catch (error) {
+        console.error('Database lookup failed:', error);
+        return null;
+    }
+}
+
+/**
+ * Save registration data to database
+ * @param {Object} data - Registration data
+ * @returns {Promise<Object>} Save result
+ */
+export async function saveRegistration(data) {
+    try {
+        console.log('Saving registration data for:', data.apelido || data.nomeCompleto);
+
+        // Prepare data for database
+        const dbData = {
+            ...data,
+            syncStatus: 'pending',
+            syncAttempts: 0,
+            _createdDate: new Date(),
+            _updatedDate: new Date()
+        };
+
+        // Clean phone number for storage
+        if (dbData.celular) {
+            dbData.celular = dbData.celular.replace(/\D/g, '');
+        }
+
+        // Insert into Registros collection
+        const result = await wixData.insert('Registros', dbData);
+
+        console.log('Registration saved successfully:', result._id);
+        return result;
+
+    } catch (error) {
+        console.error('Failed to save registration:', error);
+        throw new Error('Erro ao salvar dados. Tente novamente.');
+    }
+}
+
+/**
+ * Update existing user data
+ * @param {string} userId - User ID
+ * @param {Object} data - Updated data
+ * @returns {Promise<Object>} Update result
+ */
+export async function updateUserData(userId, data) {
+    try {
+        console.log('Updating user data for ID:', userId);
+
+        const updateData = {
+            ...data,
+            _updatedDate: new Date()
+        };
+
+        // Clean phone number
+        if (updateData.celular) {
+            updateData.celular = updateData.celular.replace(/\D/g, '');
+        }
+
+        const result = await wixData.update('Registros', updateData);
+
+        console.log('User data updated successfully');
+        return result;
+
+    } catch (error) {
+        console.error('Failed to update user data:', error);
+        throw new Error('Erro ao atualizar dados. Tente novamente.');
+    }
+}
+
+/**
+ * Get bairro options for dropdown
+ * @param {string} state - State code (optional filter)
+ * @returns {Promise<Array<{label: string, value: string}>>} Bairro options
+ */
+export async function getBairroOptions(state = null) {
+    try {
+        // This would ideally query a Bairros dataset
+        // For now, return static options based on state
+
+        const defaultOptions = [
+            { label: 'Selecione seu bairro', value: '' }
+        ];
+
+        const bairroData = {
+            'RJ': [
+                { label: 'Copacabana', value: 'copacabana' },
+                { label: 'Ipanema', value: 'ipanema' },
+                { label: 'Leblon', value: 'leblon' },
+                { label: 'Botafogo', value: 'botafogo' },
+                { label: 'Flamengo', value: 'flamengo' },
+                { label: 'Tijuca', value: 'tijuca' },
+                { label: 'Centro', value: 'centro' },
+                { label: 'Méier', value: 'meier' },
+                { label: 'Madureira', value: 'madureira' },
+                { label: 'Bangu', value: 'bangu' }
+            ],
+            'SP': [
+                { label: 'Pinheiros', value: 'pinheiros' },
+                { label: 'Vila Madalena', value: 'vila_madalena' },
+                { label: 'Itaim Bibi', value: 'itaim_bibi' },
+                { label: 'Jardins', value: 'jardins' },
+                { label: 'Moema', value: 'moema' },
+                { label: 'Centro', value: 'centro_sp' },
+                { label: 'Liberdade', value: 'liberdade' },
+                { label: 'Santana', value: 'santana' },
+                { label: 'Tatuapé', value: 'tatuape' },
+                { label: 'Vila Mariana', value: 'vila_mariana' }
+            ]
+        };
+
+        const bairros = bairroData[state] || bairroData['RJ']; // Default to RJ
+        return [...defaultOptions, ...bairros];
+
+    } catch (error) {
+        console.error('Failed to get bairro options:', error);
+        return [{ label: 'Erro ao carregar bairros', value: '' }];
+    }
+}
+
+/**
+ * Get UF (state) options for dropdown
+ * @returns {Array<{label: string, value: string}>} State options
+ */
+export function getUFOptions() {
+    return [
+        { label: 'Selecione seu estado', value: '' },
+        { label: 'Acre', value: 'AC' },
+        { label: 'Alagoas', value: 'AL' },
+        { label: 'Amapá', value: 'AP' },
+        { label: 'Amazonas', value: 'AM' },
+        { label: 'Bahia', value: 'BA' },
+        { label: 'Ceará', value: 'CE' },
+        { label: 'Distrito Federal', value: 'DF' },
+        { label: 'Espírito Santo', value: 'ES' },
+        { label: 'Goiás', value: 'GO' },
+        { label: 'Maranhão', value: 'MA' },
+        { label: 'Mato Grosso', value: 'MT' },
+        { label: 'Mato Grosso do Sul', value: 'MS' },
+        { label: 'Minas Gerais', value: 'MG' },
+        { label: 'Pará', value: 'PA' },
+        { label: 'Paraíba', value: 'PB' },
+        { label: 'Paraná', value: 'PR' },
+        { label: 'Pernambuco', value: 'PE' },
+        { label: 'Piauí', value: 'PI' },
+        { label: 'Rio de Janeiro', value: 'RJ' },
+        { label: 'Rio Grande do Norte', value: 'RN' },
+        { label: 'Rio Grande do Sul', value: 'RS' },
+        { label: 'Rondônia', value: 'RO' },
+        { label: 'Roraima', value: 'RR' },
+        { label: 'Santa Catarina', value: 'SC' },
+        { label: 'São Paulo', value: 'SP' },
+        { label: 'Sergipe', value: 'SE' },
+        { label: 'Tocantins', value: 'TO' }
+    ];
+}
+
+/**
+ * Get pending registrations for batch sync
+ * @param {number} limit - Max records to return
+ * @returns {Promise<Array<Object>>} Pending registrations
+ */
+export async function getPendingRegistrations(limit = 50) {
+    try {
+        const results = await wixData.query('Registros')
+            .eq('syncStatus', 'pending')
+            .limit(limit)
+            .find();
+
+        return results.items || [];
+
+    } catch (error) {
+        console.error('Failed to get pending registrations:', error);
+        return [];
+    }
+}
+
+/**
+ * Update sync status for a registration
+ * @param {string} registrationId - Registration ID
+ * @param {string} status - New status ('synced', 'failed')
+ * @param {Object} metadata - Additional metadata
+ * @returns {Promise<Object>} Update result
+ */
+export async function updateSyncStatus(registrationId, status, metadata = {}) {
+    try {
+        const updateData = {
+            syncStatus: status,
+            lastSyncAt: new Date(),
+            syncAttempts: { $inc: 1 },
+            ...metadata,
+            _updatedDate: new Date()
+        };
+
+        const result = await wixData.update('Registros', updateData);
+        console.log(`Sync status updated to ${status} for registration ${registrationId}`);
+
+        return result;
+
+    } catch (error) {
+        console.error('Failed to update sync status:', error);
+        throw error;
+    }
+}</content>
+<parameter name="filePath">c:\Users\otavi\Documents\prova-ai\Updating-FlavioValle\velo-code\backend\participedb.jsw
