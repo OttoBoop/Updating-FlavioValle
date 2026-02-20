@@ -4,6 +4,10 @@ export default {
   moduleNameMapper: {
     '^wix-data$': '<rootDir>/__mocks__/wix-data.js',
     '^wix-web-module$': '<rootDir>/__mocks__/wix-web-module.js',
+    '^wix-location$': '<rootDir>/__mocks__/wix-location.js',
+    '^backend/participatedb\\.web$': '<rootDir>/__mocks__/participatedb-web.js',
+    '^backend/cep-resolver\\.web$': '<rootDir>/__mocks__/cep-resolver-web.js',
+    '^public/(.+)$': '<rootDir>/../flavio-valle/src/public/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   modulePaths: [
