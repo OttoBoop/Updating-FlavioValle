@@ -2,6 +2,8 @@ export default {
   testEnvironment: 'node',
   transform: {},
   moduleNameMapper: {
+    '^wix-data$': '<rootDir>/__mocks__/wix-data.js',
+    '^wix-web-module$': '<rootDir>/__mocks__/wix-web-module.js',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   modulePaths: [
