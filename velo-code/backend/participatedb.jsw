@@ -51,19 +51,6 @@ export async function lookupUserByPhone(phoneNumber) {
  * @returns {string} Normalized phone number
  */
 function normalizePhoneNumber(phone) {
-  // Remove all non-digits
-  const digits = phone.replace(/\D/g, '');
-
-  // Brazilian mobile format: (XX) XXXXX-XXXX
-  if (digits.length === 11) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-  }
-
-  // Brazilian landline format: (XX) XXXX-XXXX
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  }
-
-  // Return as-is if not standard format
-  return phone;
+  // Always return digits-only — must match location-utils.js normalizePhone()
+  return String(phone || '').replace(/\D/g, '');
 }
