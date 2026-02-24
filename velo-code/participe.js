@@ -1,369 +1,349 @@
-// participe.js - Main page code for /participe
-import wixLocation from 'wix-location';
-import { getCurrentUserLocation, lookupAddressFromCEP, formatCEP } from 'public/location-utils.js';
-import { validateField, validationRules } from 'public/validation-utils.js';
-import { combineNames } from 'public/text-utils.js';
+// participe.js - V5: Iframe embed of Cidadão Participa
+// Replaces V4 form logic with a simple iframe that loads the CP form directly.
+// The user fills out and submits everything inside the CP platform.
 
-$w.onReady(async function () {
-    console.log('Participe page loaded');
+$w.onReady(function () {
+    const html1 = $w('#html1');
+    if (!html1) {
+        console.error('Participe V5: #html1 HtmlComponent not found on page. Add an HTML embed element with ID "html1".');
+        return;
+    }
 
-    // Initialize auto-fill features
-    await initializeAutoFill();
+    html1.src = buildIframeHtml();
 
-    // Setup form interactions
-    setupFormInteractions();
+    html1.onMessage((event) => {
+        console.log('Participe V5 iframe message:', event.data);
+    });
 
-    // Setup validation
-    setupValidation();
-
-    // Check for returning user (if phone provided in URL params)
-    await checkReturningUser();
+    console.log('Participe V5: Iframe loaded successfully.');
 });
 
-async function initializeAutoFill() {
-    try {
-        // Get user location for context (but don't auto-fill)
-        const location = await getCurrentUserLocation();
-        console.log('User location:', location);
-
-        // No auto-fill for area codes - allow international numbers
-        // Location data is available for future use if needed
-
-    } catch (error) {
-        console.error('Auto-fill initialization failed:', error);
-        // Continue without auto-fill - don't break the form
-    }
+/**
+ * Builds the self-contained HTML that goes inside the Wix HtmlComponent.
+ * Contains an iframe pointing to cidadaoparticipa.com.br/flaviovalle/
+ * with CSS cropping to hide the CP site header/branding.
+ *
+ * TUNING GUIDE:
+ *   translateY(-200px)  → shows CP title + type buttons + form
+ *   translateY(-260px)  → shows type buttons + form only
+ *   translateY(-380px)  → shows form fields only (after type selected)
+ *
+ * Adjust .crop height if the form gets cut off at the bottom.
+ */
+function buildIframeHtml() {
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    overflow-x: hidden;
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .crop {
+    width: 100%;
+    height: 1400px;
+    overflow: hidden;
+    position: relative;
+  }
+  .crop iframe {
+    width: 100%;
+    height: 2200px;
+    border: 0;
+    /* Crop: shift the page UP to hide the CP header/logo.
+       Adjust this value to control what's visible. */
+    transform: translateY(-200px);
+  }
+</style>
+</head>
+<body>
+<div class="crop">
+  <iframe
+    src="https://cidadaoparticipa.com.br/flaviovalle/"
+    title="Formulário Cidadão Participa"
+    allow="clipboard-write"
+    loading="lazy">
+  </iframe>
+</div>
+</body>
+</html>`;
 }
 
-function setupFormInteractions() {
-    // Phone lookup on blur
-    $w('#celular').onBlur(async (event) => {
-        const phone = event.target.value;
-        if (phone && phone.trim()) {
-            await handlePhoneLookup(phone);
-        }
-    });
 
-    // Real-time name combination
-    $w('#apelido').onInput((event) => {
-        updateNomeCompleto();
-    });
+/* ====================================================================
+ * V4 CODE BELOW - COMMENTED OUT (kept as reference)
+ * This was the full form implementation with CEP resolution,
+ * validation, DB sync, etc. Replaced by iframe embed in V5.
+ * ====================================================================
+ */
 
-    $w('#sobrenome').onInput((event) => {
-        updateNomeCompleto();
-    });
-
-    // CEP lookup on blur
-    $w('#cep').onBlur(async (event) => {
-        const cep = event.target.value;
-        if (cep && cep.trim()) {
-            await handleCEPLookup(cep);
-        }
-    });
-
-    // Form submission
-    $w('#submitButton').onClick(async () => {
-        await handleFormSubmission();
-    });
-
-    // Toggle optional fields
-    $w('#showMoreFields').onClick(() => {
-        toggleOptionalFields();
-    });
-
-    // WhatsApp redirect for returning users
-    $w('#whatsappButton').onClick(() => {
-        wixLocation.to('https://wa.me/5521978919938');
-    });
-}
-
-function setupValidation() {
-    // Real-time validation for all required fields
-    Object.keys(validationRules).forEach(fieldId => {
-        const element = $w(`#${fieldId}`);
-        if (element) {
-            element.onBlur((event) => {
-                const value = event.target.value;
-                const rule = validationRules[fieldId];
-
-                if (!validateField(value, rule)) {
-                    showFieldError(fieldId, rule.message);
-                } else {
-                    hideFieldError(fieldId);
-                }
-            });
-        }
-    });
-}
-
-async function checkReturningUser() {
-    // Check URL parameters for phone number (for direct links)
-    const phoneParam = wixLocation.query.celular;
-    if (phoneParam) {
-        await handlePhoneLookup(phoneParam);
-    }
-}
-
-async function handlePhoneLookup(phone) {
-    try {
-        const cleanPhone = phone.replace(/\D/g, '');
-        console.log('Looking up phone:', cleanPhone);
-
-        // TODO: Implement phone lookup when database is available
-        // For now, always show new user flow
-        console.log('New user, showing registration form');
-        showNewUserFlow();
-    } catch (error) {
-        console.error('Phone lookup failed:', error);
-        showNewUserFlow(); // Default to new user flow
-    }
-}
-
-function showReturningUserFlow(user) {
-    // TODO: Implement returning user flow when database is available
-    // For now, always show new user flow
-    showNewUserFlow();
-}
-
-function showUpdateForm(user) {
-    // TODO: Implement update form when database is available
-    showNewUserFlow();
-}
-
-function showNewUserFlow() {
-    // Ensure registration form is visible
-    $w('#registrationForm').show();
-    $w('#welcomeBackSection').hide();
-
-    // Show only required fields initially
-    showRequiredFieldsOnly();
-}
-
-function showRequiredFieldsOnly() {
-    // Hide optional field sections
-    $w('#optionalFieldsSection').hide();
-    $w('#showMoreFields').show();
-}
-
-function toggleOptionalFields() {
-    const optionalSection = $w('#optionalFieldsSection');
-    const toggleButton = $w('#showMoreFields');
-
-    if (optionalSection.isVisible) {
-        optionalSection.hide();
-        toggleButton.label = 'Mostrar mais campos ▼';
-    } else {
-        optionalSection.show();
-        toggleButton.label = 'Mostrar menos campos ▲';
-    }
-}
-
-async function setupBairroSuggestions(location) {
-    try {
-        // This would load bairro options based on location
-        // For now, we'll use a static list or load from a dataset
-        const bairroOptions = await getBairroOptions(location);
-
-        const bairroDropdown = $w('#bairro');
-        if (bairroDropdown) {
-            bairroDropdown.options = bairroOptions;
-        }
-    } catch (error) {
-        console.error('Failed to setup bairro suggestions:', error);
-    }
-}
-
-async function handleFormSubmission() {
-    try {
-        // Clear previous errors
-        hideAllErrors();
-
-        // Collect form data
-        const formData = collectFormData();
-
-        // Validate required fields
-        const validationErrors = validateFormData(formData);
-        if (validationErrors.length > 0) {
-            showValidationErrors(validationErrors);
-            return;
-        }
-
-        // Show loading state
-        $w('#submitButton').disable();
-        $w('#submitButton').label = 'Enviando...';
-
-        // TODO: Save to database when backend is available
-        console.log('Form data collected:', formData);
-
-        // Redirect to WhatsApp
-        wixLocation.to('https://wa.me/5521978919938');
-
-    } catch (error) {
-        console.error('Form submission failed:', error);
-        showSubmissionError(error);
-
-        // Re-enable submit button
-        $w('#submitButton').enable();
-        $w('#submitButton').label = 'Enviar';
-    }
-}
-
-function collectFormData() {
-    return {
-        apelido: $w('#apelido').value,
-        sobrenome: $w('#sobrenome').value,
-        nome: $w('#nome').value,
-        celular: $w('#celular').value,
-        email: $w('#email').value,
-
-        // Optional fields
-        cpf: $w('#cpf').value || null,
-        sexo: $w('#sexo').value || null,
-        dataNascimento: $w('#dataNascimento').value || null,
-        telefone: $w('#telefone').value || null,
-        cep: $w('#cep').value || null,
-        endereco: $w('#endereco').value || null,
-        numero: $w('#numero').value || null,
-        complemento: $w('#complemento').value || null,
-        bairro: $w('#bairro').value || null,
-        cidade: $w('#cidade').value || null,
-        uf: $w('#uf').value || null,
-        observacao: $w('#observacao').value || null,
-        titulo: $w('#titulo').value || null,
-        sessao: $w('#sessao').value || null
-    };
-}
-
-function validateFormData(data) {
-    const errors = [];
-
-    Object.keys(validationRules).forEach(fieldId => {
-        const rule = validationRules[fieldId];
-        const value = data[fieldId];
-
-        if (!validateField(value, rule)) {
-            errors.push({
-                field: fieldId,
-                message: rule.message
-            });
-        }
-    });
-
-    return errors;
-}
-
-function showValidationErrors(errors) {
-    errors.forEach(error => {
-        showFieldError(error.field, error.message);
-    });
-}
-
-function showFieldError(fieldId, message) {
-    const errorElement = $w(`#${fieldId}Error`);
-    if (errorElement) {
-        errorElement.text = message;
-        errorElement.show();
-    }
-
-    // Add error styling to field
-    const fieldElement = $w(`#${fieldId}`);
-    if (fieldElement) {
-        fieldElement.style.borderColor = 'red';
-    }
-}
-
-function hideFieldError(fieldId) {
-    const errorElement = $w(`#${fieldId}Error`);
-    if (errorElement) {
-        errorElement.hide();
-    }
-
-    // Remove error styling
-    const fieldElement = $w(`#${fieldId}`);
-    if (fieldElement) {
-        fieldElement.style.borderColor = '';
-    }
-}
-
-function hideAllErrors() {
-    Object.keys(validationRules).forEach(fieldId => {
-        hideFieldError(fieldId);
-    });
-}
-
-function showSubmissionError(error) {
-    const errorMessage = error.message || 'Erro ao salvar. Tente novamente.';
-    $w('#submissionError').text = errorMessage;
-    $w('#submissionError').show();
-}
-
-function isValidPhone(phone) {
-    // Accept any phone format (Brazilian or international)
-    return phone && phone.trim().length > 0;
-}
-
-// Update nome completo field when apelido or sobrenome changes
-function updateNomeCompleto() {
-    const apelido = $w('#apelido').value || '';
-    const sobrenome = $w('#sobrenome').value || '';
-    const nomeCompleto = combineNames(apelido, sobrenome);
-
-    const nomeElement = $w('#nome');
-    if (nomeElement) {
-        nomeElement.value = nomeCompleto;
-    }
-// Handle CEP lookup and auto-fill address fields
-async function handleCEPLookup(cep) {
-    try {
-        console.log('Looking up CEP:', cep);
-
-        // Show loading indicator
-        $w('#cepLoading').show();
-
-        const addressData = await lookupAddressFromCEP(cep);
-
-        // Auto-fill address fields
-        if (addressData.endereco) {
-            $w('#endereco').value = addressData.endereco;
-        }
-        if (addressData.numero) {
-            $w('#numero').value = addressData.numero;
-        }
-        if (addressData.complemento) {
-            $w('#complemento').value = addressData.complemento;
-        }
-        if (addressData.bairro) {
-            $w('#bairro').value = addressData.bairro;
-        }
-        if (addressData.cidade) {
-            $w('#cidade').value = addressData.cidade;
-        }
-        if (addressData.uf) {
-            $w('#uf').value = addressData.uf;
-        }
-
-        console.log('Address auto-filled from CEP');
-
-    } catch (error) {
-        console.error('CEP lookup failed:', error);
-        // Don't show error for CEP lookup failures - user can enter manually
-    } finally {
-        // Hide loading indicator
-        $w('#cepLoading').hide();
-    }
-}
-
-// Helper functions for bairro options (would be in a separate utility)
-async function getBairroOptions(location) {
-    // This would load from a dataset or API
-    // For now, return a basic list
-    return [
-        { label: 'Selecione seu bairro', value: '' },
-        { label: 'Copacabana', value: 'copacabana' },
-        { label: 'Ipanema', value: 'ipanema' },
-        { label: 'Leblon', value: 'leblon' },
-        { label: 'Botafogo', value: 'botafogo' },
-        // ... more options
-    ];
-}</content>
-<parameter name="filePath">c:\Users\otavi\Documents\prova-ai\Updating-FlavioValle\velo-code\participe.js
+/*
+// --- V4 IMPORTS (commented out) ---
+// import wixLocation from 'wix-location';
+// import { resolveCep } from 'backend/cep-resolver.web';
+// import {
+//     validationRules,
+//     validateField,
+//     validateFormData
+// } from 'public/validation-utils.js';
+// import {
+//     formatCEP,
+//     normalizePhone,
+//     normalizeGenderValue
+// } from 'public/location-utils.js';
+// import { combineNames } from 'public/text-utils.js';
+//
+// const WHATSAPP_URL = 'https://wa.me/5521978919938';
+// const DEBUG_VISUAL_PROOF = true;
+//
+// let isCepResolved = false;
+// let resolvedCepData = null;
+// let lastResolvedCep = '';
+//
+// $w.onReady(function () {
+//     renderVisualProofOverlay();
+//     logMissingRequiredElements();
+//     configureStaticUI();
+//     setupFormInteractions();
+//     setupValidation();
+//     updateNomeCompleto();
+// });
+//
+// function configureStaticUI() {
+//     configureGeneroDropdown();
+//     setReadOnlyIfExists('#nome', true);
+//     setReadOnlyIfExists('#rua', true);
+//     setReadOnlyIfExists('#cidade', true);
+// }
+//
+// function configureGeneroDropdown() {
+//     const generoField = getElement('#genero');
+//     if (!generoField || !generoField.options) return;
+//     generoField.options = [
+//         { label: 'Homem', value: 'homem' },
+//         { label: 'Mulher', value: 'mulher' },
+//         { label: 'Outro/Prefiro nao informar', value: 'outro_prefiro_nao_informar' }
+//     ];
+// }
+//
+// function setReadOnlyIfExists(selector, isReadOnly) {
+//     const field = getElement(selector);
+//     if (!field) return;
+//     if ('readOnly' in field) field.readOnly = isReadOnly;
+// }
+//
+// function setupFormInteractions() {
+//     const apelidoField = getElement('#apelido');
+//     bindValueEvent(apelidoField, () => updateNomeCompleto());
+//     const sobrenomeField = getElement('#sobrenome');
+//     bindValueEvent(sobrenomeField, () => updateNomeCompleto());
+//     const celularField = getElement('#celular');
+//     bindValueEvent(celularField, (event) => {
+//         const value = readEventValue(event, celularField);
+//         celularField.value = normalizePhone(value);
+//     });
+//     const cepField = getElement('#cep');
+//     if (cepField) {
+//         bindValueEvent(cepField, (event) => {
+//             const formatted = formatCEP(readEventValue(event, cepField));
+//             cepField.value = formatted;
+//             resetCepResolution();
+//             hideFieldError('cep');
+//         });
+//         if (typeof cepField.onBlur === 'function') {
+//             cepField.onBlur(async (event) => {
+//                 await resolveCepAndFillAddress(readEventValue(event, cepField));
+//             });
+//         }
+//     }
+//     const submitButton = getElement('#submitButton');
+//     if (submitButton && typeof submitButton.onClick === 'function') {
+//         submitButton.onClick(async () => { await handleFormSubmission(); });
+//     }
+// }
+//
+// function setupValidation() {
+//     Object.keys(validationRules).forEach((fieldId) => {
+//         const element = getElement(getFieldSelector(fieldId));
+//         if (!element || typeof element.onBlur !== 'function') return;
+//         element.onBlur((event) => {
+//             const value = readEventValue(event, element);
+//             validateFieldAndShowError(fieldId, value);
+//         });
+//     });
+// }
+//
+// function updateNomeCompleto() {
+//     const apelido = getValue('#apelido');
+//     const sobrenome = getValue('#sobrenome');
+//     const nomeCompleto = combineNames(apelido, sobrenome);
+//     setValueIfExists('#nome', nomeCompleto);
+// }
+//
+// async function resolveCepAndFillAddress(rawCep) {
+//     const formattedCep = formatCEP(rawCep);
+//     setValueIfExists('#cep', formattedCep);
+//     if (!formattedCep) { resetCepResolution(); setValueIfExists('#rua', ''); setValueIfExists('#cidade', ''); return; }
+//     showCepLoading(true);
+//     try {
+//         const data = await resolveCep(formattedCep);
+//         setValueIfExists('#rua', data.rua || '');
+//         setValueIfExists('#cidade', data.cidade || '');
+//         resolvedCepData = data;
+//         lastResolvedCep = data.cep;
+//         isCepResolved = Boolean(data.rua && data.cidade);
+//         if (!isCepResolved) throw new Error('CEP nao retornou rua e cidade.');
+//         hideFieldError('cep');
+//     } catch (error) {
+//         resetCepResolution();
+//         setValueIfExists('#rua', ''); setValueIfExists('#cidade', '');
+//         showFieldError('cep', getCepErrorMessage(error));
+//     } finally { showCepLoading(false); }
+// }
+//
+// async function handleFormSubmission() {
+//     hideAllErrors();
+//     updateNomeCompleto();
+//     const formData = collectFormData();
+//     const errors = validateFormData(formData);
+//     if (!isCepReadyForSubmission(formData.cep)) {
+//         errors.push({ field: 'cep', message: 'Nao foi possivel validar o CEP. Confira e tente novamente.' });
+//     }
+//     if (errors.length > 0) { errors.forEach((error) => showFieldError(error.field, error.message)); return; }
+//     const submitButton = getElement('#submitButton');
+//     if (submitButton) { submitButton.disable(); submitButton.label = 'Enviando...'; }
+//     try {
+//         wixLocation.to(WHATSAPP_URL);
+//     } catch (error) {
+//         showSubmissionError(error);
+//         if (submitButton) { submitButton.enable(); submitButton.label = 'Enviar'; }
+//     }
+// }
+//
+// function collectFormData() {
+//     return {
+//         apelido: getValue('#apelido'), sobrenome: getValue('#sobrenome'),
+//         nome: getValue('#nome'), celular: normalizePhone(getValue('#celular')),
+//         email: getValue('#email'), dataNascimento: getValue('#dataNascimento'),
+//         genero: normalizeGenderValue(getValue('#genero')),
+//         cep: formatCEP(getValue('#cep')), rua: getValue('#rua'),
+//         cidade: getValue('#cidade'), numero: getValue('#numero'),
+//         complemento: getValue('#complemento'), observacao: getValue('#mensagem')
+//     };
+// }
+//
+// function isCepReadyForSubmission(currentCep) {
+//     const formattedCep = formatCEP(currentCep || '');
+//     if (!isCepResolved || !resolvedCepData) return false;
+//     if (!lastResolvedCep || formattedCep !== lastResolvedCep) return false;
+//     return Boolean(resolvedCepData.rua && resolvedCepData.cidade);
+// }
+//
+// function resetCepResolution() { isCepResolved = false; resolvedCepData = null; lastResolvedCep = ''; }
+//
+// function validateFieldAndShowError(fieldId, value) {
+//     const rule = validationRules[fieldId];
+//     if (!rule) return true;
+//     const isValid = validateField(value, rule);
+//     if (!isValid) { showFieldError(fieldId, rule.message); return false; }
+//     hideFieldError(fieldId); return true;
+// }
+//
+// function showFieldError(fieldId, message) {
+//     const errorElement = getElement(getFieldErrorSelector(fieldId));
+//     if (errorElement) { errorElement.text = message; errorElement.show(); }
+//     const fieldElement = getElement(getFieldSelector(fieldId));
+//     if (fieldElement && fieldElement.style) fieldElement.style.borderColor = '#d93025';
+// }
+//
+// function hideFieldError(fieldId) {
+//     const errorElement = getElement(getFieldErrorSelector(fieldId));
+//     if (errorElement) errorElement.hide();
+//     const fieldElement = getElement(getFieldSelector(fieldId));
+//     if (fieldElement && fieldElement.style) fieldElement.style.borderColor = '';
+// }
+//
+// function hideAllErrors() { Object.keys(validationRules).forEach((fieldId) => hideFieldError(fieldId)); }
+//
+// function showSubmissionError(error) {
+//     const message = error && error.message ? error.message : 'Nao foi possivel enviar. Tente novamente.';
+//     const submissionError = getElement('#submissionError');
+//     if (!submissionError) return;
+//     submissionError.text = message; submissionError.show();
+// }
+//
+// function showCepLoading(isLoading) {
+//     const loadingElement = getElement('#cepLoading');
+//     if (!loadingElement) return;
+//     if (isLoading) loadingElement.show(); else loadingElement.hide();
+// }
+//
+// function getCepErrorMessage(error) {
+//     if (!error || !error.message) return 'Nao foi possivel validar o CEP.';
+//     return error.message;
+// }
+//
+// function getValue(selector) {
+//     const element = getElement(selector);
+//     return element && element.value !== undefined ? element.value : '';
+// }
+//
+// function setValueIfExists(selector, value) {
+//     const element = getElement(selector);
+//     if (element && element.value !== undefined) element.value = value;
+// }
+//
+// function getElement(selector) {
+//     try { return $w(selector); } catch (error) { return null; }
+// }
+//
+// function renderVisualProofOverlay() {
+//     if (!DEBUG_VISUAL_PROOF) return;
+//     try {
+//         const debugBanner = getElement('#debugBanner');
+//         if (debugBanner) { if (typeof debugBanner.show === 'function') debugBanner.show(); if (debugBanner.style) { debugBanner.style.backgroundColor = '#ff0033'; debugBanner.style.borderColor = '#ffff00'; debugBanner.style.borderWidth = '8px'; } }
+//         const debugBannerText = getElement('#debugBannerText');
+//         if (debugBannerText) { if ('text' in debugBannerText) debugBannerText.text = 'V4 INJETADO'; if (typeof debugBannerText.show === 'function') debugBannerText.show(); if (debugBannerText.style) debugBannerText.style.color = '#ffffff'; }
+//         const submitButton = getElement('#submitButton');
+//         if (submitButton && 'label' in submitButton) submitButton.label = 'V4 INJETADO';
+//         const submissionError = getElement('#submissionError');
+//         if (submissionError && 'text' in submissionError && typeof submissionError.show === 'function') { submissionError.text = 'V4 INJETADO'; submissionError.show(); }
+//         console.log('V4 visual proof executed.');
+//     } catch (error) { console.error('Unable to render V4 visual proof:', error); }
+// }
+//
+// function bindValueEvent(element, handler) {
+//     if (!element || typeof handler !== 'function') return false;
+//     if (typeof element.onInput === 'function') { element.onInput(handler); return true; }
+//     if (typeof element.onChange === 'function') { element.onChange(handler); return true; }
+//     if (typeof element.onBlur === 'function') { element.onBlur(handler); return true; }
+//     return false;
+// }
+//
+// function readEventValue(event, element) {
+//     if (event && event.target && event.target.value !== undefined) return String(event.target.value || '');
+//     if (element && element.value !== undefined) return String(element.value || '');
+//     return '';
+// }
+//
+// function getFieldSelector(fieldId) { if (fieldId === 'observacao') return '#mensagem'; return `#${fieldId}`; }
+// function getFieldErrorSelector(fieldId) { if (fieldId === 'observacao') return '#mensagemError'; return `#${fieldId}Error`; }
+//
+// function logMissingRequiredElements() {
+//     const missing = [];
+//     Object.keys(validationRules).forEach((fieldId) => {
+//         const fieldSelector = getFieldSelector(fieldId);
+//         const errorSelector = getFieldErrorSelector(fieldId);
+//         if (!getElement(fieldSelector)) missing.push(fieldSelector);
+//         if (!getElement(errorSelector)) missing.push(errorSelector);
+//     });
+//     ['#submitButton', '#submissionError', '#cepLoading', '#debugBanner', '#debugBannerText'].forEach((selector) => {
+//         if (!getElement(selector)) missing.push(selector);
+//     });
+//     if (missing.length > 0) { console.warn('Participe V4.1 - IDs ausentes:', missing.join(', ')); return; }
+//     console.log('Participe V4.1 - IDs obrigatorios encontrados.');
+// }
+*/
