@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Participe - Flavio Valle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- ========== HEADER (YOUR BRANDING) ========== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <div class="logo-icon">FV</div>
+        <div class="logo-text">
+          <span class="logo-name">Flavio Valle</span>
+          <span class="logo-sub">Vereador • Rio de Janeiro</span>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <a href="#">Início</a>
+        <a href="#" class="active">Participe</a>
+        <a href="#">Projetos</a>
+        <a href="#">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========== HERO SECTION ========== -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">🗳️ Canal Direto</div>
+      <h1>Sua voz importa.<br>Participe!</h1>
+      <p class="hero-subtitle">
+        Envie sua solicitação, sugestão, reclamação ou elogio diretamente
+        para o gabinete do Vereador Flavio Valle. Todas as manifestações
+        são respondidas em até 48 horas.
+      </p>
+    </div>
+  </section>
+
+  <!-- ========== IFRAME EMBED (CIDADÃO PARTICIPA) ========== -->
+  <section class="form-section">
+    <div class="form-container">
+      <div class="form-header">
+        <h3>📋 Registre sua Manifestação</h3>
+        <p class="form-note">
+          Escolha o tipo de manifestação e preencha seus dados abaixo.
+          Os campos marcados com <strong>*</strong> são obrigatórios.
+          Seus dados são protegidos pela LGPD.
+        </p>
+      </div>
+
+      <!-- The iframe crop — this is the magic -->
+      <div class="iframe-wrapper" id="iframe-wrapper">
+        <div class="iframe-crop">
+          <iframe id="cp-iframe" class="cp-iframe" src="https://cidadaoparticipa.com.br/flaviovalle/" loading="lazy"
+            allow="clipboard-write" title="Formulário de Participação Cidadão Participa">
+          </iframe>
+        </div>
+        <!-- Loading overlay -->
+        <div class="iframe-loading" id="iframe-loading">
+          <div class="spinner"></div>
+          <span>Carregando formulário...</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== INFO SECTION ========== -->
+  <section class="info-section">
+    <div class="info-inner">
+      <div class="info-card">
+        <div class="info-icon">🕐</div>
+        <h4>Resposta em 48h</h4>
+        <p>Todas as manifestações recebem retorno em até 2 dias úteis.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">🔒</div>
+        <h4>Dados Protegidos</h4>
+        <p>Suas informações são tratadas conforme a LGPD.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">📊</div>
+        <h4>Acompanhamento</h4>
+        <p>Receba um protocolo para acompanhar sua solicitação.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>&copy; 2026 Gabinete Flavio Valle. Todos os direitos reservados.</p>
+      <p class="footer-powered">Powered by Gabinete Online</p>
+    </div>
+  </footer>
+
+  <script>
+    // ============ IFRAME LOAD HANDLING ============
+    const iframe = document.getElementById('cp-iframe');
+    const loadingOverlay = document.getElementById('iframe-loading');
+
+    iframe.addEventListener('load', () => {
+      loadingOverlay.style.opacity = '0';
+      setTimeout(() => {
+        loadingOverlay.style.display = 'none';
+      }, 300);
+    });
+
+    // Fallback: hide loader after 8 seconds regardless
+    setTimeout(() => {
+      loadingOverlay.style.display = 'none';
+    }, 8000);
+  </script>
+</body>
+
+</html>

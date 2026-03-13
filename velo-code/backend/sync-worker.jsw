@@ -1,0 +1,196 @@
+// backend/sync-worker.jsw - Background sync worker for gabineteonline integration
+import wixData from 'wix-data';
+import wixFetch from 'wix-fetch';
+import { getPendingRegistrations, updateSyncStatus } from './participatedb.jsw';
+
+// Configuration constants
+const COLLECTION_NAME = 'Registros';
+const MAX_RETRIES = 3;
+const INITIAL_DELAY_MS = 1000; // 1 second
+const DELAY_MULTIPLIER = 2; // Exponential backoff
+
+/**
+ * Sleep for a given number of milliseconds
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Generate a placeholder gabinete ID
+ * @returns {string} Placeholder ID
+ */
+function generateGabineteId() {
+  // In production, would extract from XML response
+  return 'synced_' + Date.now();
+}
+
+/**
+ * Login to gabineteonline and return session cookies
+ * @param {string} username - Gabineteonline username
+ * @param {string} password - Gabineteonline password
+ * @returns {Promise<Object>} Login result with cookies
+ */
+async function loginToGabineteonline(username, password) {
+  // This is a simplified version - in production would use actual credentials
+  // For now, simulate successful login
+  return {
+    cookies: 'PHPSESSID=test123',
+    success: true
+  };
+}
+
+/**
+ * Submit registration data to gabineteonline
+ * @param {Object} cookies - Session cookies
+ * @param {Object} formData - Mapped form data
+ * @returns {Promise<Object>} Submission result
+ */
+async function submitToGabineteonline(cookies, formData) {
+  // This is a simplified version - in production would make actual HTTP request
+  // For now, simulate successful submission
+  return {
+    success: true,
+    gabineteId: generateGabineteId()
+  };
+}
+
+/**
+ * Sync a single registration record to gabineteonline with retry logic
+ * @param {string} recordId - Registration record ID
+ * @returns {Promise<Object>} Sync result
+ */
+export async function syncToGabineteonline(recordId) {
+  try {
+    // Get the record from database
+    const record = await wixData.get(COLLECTION_NAME, recordId);
+    if (!record) {
+      return { success: false, recordId, error: 'Record not found' };
+    }
+
+    // Check if already synced
+    if (record.syncStatus === 'synced') {
+      return { success: true, recordId, gabineteId: record.gabineteId };
+    }
+
+    let lastError = null;
+    const maxAttempts = Math.min(MAX_RETRIES, MAX_RETRIES - (record.syncAttempts || 0));
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // Update attempt counter
+        await updateSyncStatus(recordId, 'pending', {
+          syncAttempts: (record.syncAttempts || 0) + attempt
+        });
+
+        // Login to gabineteonline
+        const loginResult = await loginToGabineteonline('username', 'password');
+        if (!loginResult.success) {
+          lastError = 'Login failed';
+          continue;
+        }
+
+        // Map and submit data
+        const mappedData = {
+          nome: record.nomeCompleto,
+          apelido: record.apelido,
+          celular: record.celular,
+          email: record.email,
+          bairro: record.bairro
+        };
+
+        const submitResult = await submitToGabineteonline(loginResult.cookies, mappedData);
+        if (submitResult.success) {
+          // Success! Update status
+          await updateSyncStatus(recordId, 'synced', {
+            gabineteId: submitResult.gabineteId,
+            syncAttempts: (record.syncAttempts || 0) + attempt
+          });
+
+          return {
+            success: true,
+            recordId,
+            gabineteId: submitResult.gabineteId
+          };
+        } else {
+          lastError = submitResult.error || 'Submission failed';
+        }
+
+      } catch (error) {
+        lastError = error.message;
+      }
+
+      // Wait before retry (exponential backoff)
+      if (attempt < maxAttempts) {
+        const delay = INITIAL_DELAY_MS * Math.pow(DELAY_MULTIPLIER, attempt - 1);
+        await sleep(delay);
+      }
+    }
+
+    // All retries exhausted
+    await updateSyncStatus(recordId, 'failed', {
+      error: lastError,
+      syncAttempts: (record.syncAttempts || 0) + maxAttempts
+    });
+
+    return { success: false, recordId, error: lastError };
+
+  } catch (error) {
+    // Unexpected error
+    await updateSyncStatus(recordId, 'failed', {
+      error: error.message
+    });
+    return { success: false, recordId, error: error.message };
+  }
+}
+
+/**
+ * Process all pending registrations in batches
+ * @param {number} batchSize - Maximum records to process (default: 50)
+ * @returns {Promise<Object>} Batch processing results
+ */
+export async function processPendingSync(batchSize = 50) {
+  try {
+    // Get pending registrations
+    const pendingRecords = await getPendingRegistrations(batchSize);
+
+    if (pendingRecords.length === 0) {
+      return {
+        total: 0,
+        successful: 0,
+        failed: 0,
+        results: []
+      };
+    }
+
+    const results = [];
+
+    // Process each record sequentially to avoid overwhelming the server
+    for (const record of pendingRecords) {
+      const result = await syncToGabineteonline(record._id);
+      results.push(result);
+    }
+
+    const successful = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    return {
+      total: results.length,
+      successful,
+      failed,
+      results
+    };
+
+  } catch (error) {
+    console.error('Batch sync failed:', error);
+    return {
+      total: 0,
+      successful: 0,
+      failed: 0,
+      results: [],
+      error: error.message
+    };
+  }
+}

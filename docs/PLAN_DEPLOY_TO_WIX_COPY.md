@@ -1,3 +1,7 @@
+> [!WARNING]
+> Superseded by `docs/PLAN_Participe_Deployment_V4.md` (2026-02-19) in the workspace root.
+> This document contains older assumptions and is kept only for historical reference.
+
 # Deploy to Wix Copy — Implementation Plan
 
 **Generated:** 2026-02-12

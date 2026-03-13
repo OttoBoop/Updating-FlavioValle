@@ -1,119 +1,124 @@
-// public/validation-utils.js - Form validation utilities
+// public/validation-utils.js - V4 validation rules
 
-/**
- * Validation rules for each field
- */
+const NAME_PATTERN = /^[A-Za-z\u00C0-\u017F\s]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CEP_PATTERN = /^\d{5}-\d{3}$/;
+const GENERO_VALUES = new Set([
+    'homem',
+    'mulher',
+    'outro_prefiro_nao_informar'
+]);
+
 export const validationRules = {
     apelido: {
         required: true,
-        pattern: /^[a-zA-ZÀ-ÿ\s]+$/,
         minLength: 1,
         maxLength: 30,
-        message: 'Primeiro nome é obrigatório (1-30 caracteres)'
+        customValidator: (value) => NAME_PATTERN.test(String(value || '').trim()),
+        message: 'Informe o primeiro nome (1-30 letras).'
     },
     sobrenome: {
         required: true,
-        pattern: /^[a-zA-ZÀ-ÿ\s]+$/,
         minLength: 1,
         maxLength: 200,
-        message: 'Sobrenome é obrigatório (1-200 caracteres)'
+        customValidator: (value) => NAME_PATTERN.test(String(value || '').trim()),
+        message: 'Informe o sobrenome (1-200 letras).'
     },
     nome: {
         required: true,
-        message: 'Nome completo é gerado automaticamente'
+        minLength: 2,
+        maxLength: 255,
+        message: 'Nome completo nao pode ficar vazio.'
     },
     celular: {
         required: true,
-        message: 'Celular é obrigatório'
+        customValidator: (value) => isValidPhone(value),
+        message: 'Informe um celular valido.'
     },
     email: {
         required: true,
-        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         maxLength: 5000,
-        message: 'Email é obrigatório'
-    },
-    cep: {
-        required: true,
-        pattern: /^\d{5}-\d{3}$|^\d{8}$/,
-        message: 'CEP é obrigatório. Use formato: 99999-999'
-    },
-    cpf: {
-        required: false,
-        pattern: /^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/,
-        message: 'CPF inválido. Use formato: 999.999.999-99'
+        customValidator: (value) => EMAIL_PATTERN.test(String(value || '').trim()),
+        message: 'Informe um email valido.'
     },
     dataNascimento: {
         required: true,
-        pattern: /^\d{2}\/\d{2}\/\d{4}$/,
-        message: 'Data de nascimento é obrigatória. Use formato: DD/MM/AAAA'
+        customValidator: (value) => isValidBirthDate(value),
+        message: 'Informe uma data de nascimento valida.'
     },
-    titulo: {
-        required: false,
-        pattern: /^\d+$/,
-        minLength: 12,
-        maxLength: 12,
-        message: 'Título de eleitor deve ter 12 dígitos'
+    genero: {
+        required: true,
+        customValidator: (value) => GENERO_VALUES.has(String(value || '').trim()),
+        message: 'Selecione uma opcao valida de genero.'
     },
-    sessao: {
+    cep: {
+        required: true,
+        customValidator: (value) => CEP_PATTERN.test(String(value || '').trim()),
+        message: 'Informe um CEP valido no formato 99999-999.'
+    },
+    rua: {
+        required: true,
+        minLength: 2,
+        maxLength: 255,
+        message: 'Rua nao pode ficar vazia.'
+    },
+    cidade: {
+        required: true,
+        minLength: 2,
+        maxLength: 120,
+        message: 'Cidade nao pode ficar vazia.'
+    },
+    numero: {
+        required: true,
+        customValidator: (value) => isValidHouseNumber(value),
+        message: 'Numero e obrigatorio. Use numero da casa ou SN.'
+    },
+    complemento: {
         required: false,
-        pattern: /^\d+$/,
-        maxLength: 4,
-        message: 'Sessão deve conter apenas números'
+        maxLength: 120,
+        message: 'Complemento deve ter no maximo 120 caracteres.'
+    },
+    observacao: {
+        required: false,
+        maxLength: 500,
+        message: 'Mensagem deve ter no maximo 500 caracteres.'
     }
 };
 
-/**
- * Validate a single field against its rules
- * @param {any} value - Field value
- * @param {Object} rule - Validation rule
- * @returns {boolean} True if valid
- */
 export function validateField(value, rule) {
-    if (!rule) return true;
-
-    // Check required
-    if (rule.required && (!value || value.toString().trim() === '')) {
-        return false;
-    }
-
-    // If not required and empty, it's valid
-    if (!rule.required && (!value || value.toString().trim() === '')) {
+    if (!rule) {
         return true;
     }
 
-    const strValue = value.toString().trim();
+    const normalized = normalizeValue(value);
 
-    // Check pattern
-    if (rule.pattern && !rule.pattern.test(strValue)) {
+    if (rule.required && normalized === '') {
         return false;
     }
 
-    // Check length
-    if (rule.minLength && strValue.length < rule.minLength) {
+    if (!rule.required && normalized === '') {
+        return true;
+    }
+
+    if (rule.minLength && normalized.length < rule.minLength) {
         return false;
     }
 
-    if (rule.maxLength && strValue.length > rule.maxLength) {
+    if (rule.maxLength && normalized.length > rule.maxLength) {
         return false;
     }
 
-    // Custom validations
-    if (rule.customValidator) {
-        return rule.customValidator(value);
+    if (rule.customValidator && !rule.customValidator(value, normalized)) {
+        return false;
     }
 
     return true;
 }
 
-/**
- * Validate all fields in form data
- * @param {Object} formData - Form data object
- * @returns {Array<{field: string, message: string}>} Validation errors
- */
 export function validateFormData(formData) {
     const errors = [];
 
-    Object.keys(validationRules).forEach(fieldId => {
+    Object.keys(validationRules).forEach((fieldId) => {
         const rule = validationRules[fieldId];
         const value = formData[fieldId];
 
@@ -128,116 +133,88 @@ export function validateFormData(formData) {
     return errors;
 }
 
-/**
- * CPF validation with mod-11 algorithm
- * @param {string} cpf - CPF to validate
- * @returns {boolean} True if valid
- */
-export function validateCPF(cpf) {
-    if (!cpf) return false;
-
-    // Remove formatting
-    const digits = cpf.replace(/\D/g, '');
-
-    if (digits.length !== 11) return false;
-
-    // Check for repeated digits
-    if (/^(\d)\1+$/.test(digits)) return false;
-
-    // Calculate first verification digit
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-        sum += parseInt(digits[i]) * (10 - i);
+export function isValidHouseNumber(value) {
+    const normalized = normalizeValue(value).toUpperCase();
+    if (normalized === 'SN' || normalized === 'S/N') {
+        return true;
     }
-    let remainder = (sum * 10) % 11;
-    const firstDigit = remainder === 10 ? 0 : remainder;
 
-    if (firstDigit !== parseInt(digits[9])) return false;
-
-    // Calculate second verification digit
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-        sum += parseInt(digits[i]) * (11 - i);
-    }
-    remainder = (sum * 10) % 11;
-    const secondDigit = remainder === 10 ? 0 : remainder;
-
-    return secondDigit === parseInt(digits[10]);
+    return /^\d+[A-Za-z]?$/.test(normalized);
 }
 
-/**
- * Format CPF with mask
- * @param {string} cpf - Raw CPF
- * @returns {string} Formatted CPF
- */
-export function formatCPF(cpf) {
-    if (!cpf) return '';
-
-    const digits = cpf.replace(/\D/g, '');
-
-    if (digits.length <= 3) {
-        return digits;
-    } else if (digits.length <= 6) {
-        return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-    } else if (digits.length <= 9) {
-        return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-    } else {
-        return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
-    }
+export function isValidPhone(value) {
+    const digits = String(value || '').replace(/\D/g, '');
+    return digits.length >= 10 && digits.length <= 15;
 }
 
-/**
- * Format CEP with mask
- * @param {string} cep - Raw CEP
- * @returns {string} Formatted CEP
- */
-export function formatCEP(cep) {
-    if (!cep) return '';
-
-    const digits = cep.replace(/\D/g, '');
-
-    if (digits.length <= 5) {
-        return digits;
-    } else {
-        return `${digits.slice(0, 5)}-${digits.slice(5, 8)}`;
+export function isValidBirthDate(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value <= new Date();
     }
+
+    const text = normalizeValue(value);
+    if (!text) {
+        return false;
+    }
+
+    // Accept DD/MM/YYYY
+    const brMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (brMatch) {
+        const day = Number(brMatch[1]);
+        const month = Number(brMatch[2]);
+        const year = Number(brMatch[3]);
+        return isCalendarDate(day, month, year);
+    }
+
+    // Accept YYYY-MM-DD from date picker.
+    const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+        const year = Number(isoMatch[1]);
+        const month = Number(isoMatch[2]);
+        const day = Number(isoMatch[3]);
+        return isCalendarDate(day, month, year);
+    }
+
+    return false;
 }
 
-/**
- * Validate date format and logical constraints
- * @param {string} date - Date in DD/MM/YYYY format
- * @returns {boolean} True if valid
- */
-export function validateDate(date) {
-    if (!date) return false;
-
-    const match = date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!match) return false;
-
-    const day = parseInt(match[1]);
-    const month = parseInt(match[2]);
-    const year = parseInt(match[3]);
-
-    // Basic range checks
-    if (month < 1 || month > 12) return false;
-    if (day < 1 || day > 31) return false;
-    if (year < 1900 || year > new Date().getFullYear()) return false;
-
-    // Month-specific day validation
-    const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    if (month === 2 && isLeapYear(year)) {
-        return day <= 29;
-    } else {
-        return day <= daysInMonth[month - 1];
+function normalizeValue(value) {
+    if (value === undefined || value === null) {
+        return '';
     }
+
+    return String(value).trim();
 }
 
-/**
- * Check if year is a leap year
- * @param {number} year - Year
- * @returns {boolean} True if leap year
- */
-function isLeapYear(year) {
-    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-}</content>
-<parameter name="filePath">c:\Users\otavi\Documents\prova-ai\Updating-FlavioValle\velo-code\public\validation-utils.js
+function isCalendarDate(day, month, year) {
+    const now = new Date();
+
+    if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) {
+        return false;
+    }
+
+    if (year < 1900 || year > now.getFullYear()) {
+        return false;
+    }
+
+    if (month < 1 || month > 12) {
+        return false;
+    }
+
+    if (day < 1 || day > 31) {
+        return false;
+    }
+
+    const date = new Date(year, month - 1, day);
+    const isExactDate = (
+        date.getFullYear() === year
+        && date.getMonth() === month - 1
+        && date.getDate() === day
+    );
+
+    if (!isExactDate) {
+        return false;
+    }
+
+    return date <= now;
+}

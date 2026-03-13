@@ -1,17 +1,21 @@
-# `/participe` Page Enhancement Plan — Auto-Fill Strategy
+﻿> [!WARNING]
+> Superseded by `docs/PLAN_Participe_Deployment_V4.md` (2026-02-19) in the workspace root.
+> This document contains older assumptions and is kept only for historical reference.
+
+# `/participe` Page Enhancement Plan â€” Auto-Fill Strategy
 
 **Date:** February 13, 2026
 **Page:** `/participe` on flaviovalle.com
 **Goal:** Smart auto-fill of required fields while maintaining user control
 
-## Status: ✅ IMPLEMENTED (Asterisks Added)
+## Status: âœ… IMPLEMENTED (Asterisks Added)
 
 **Last Updated:** 2026-02-13
 **Code Location:** `velo-code/participe.js` + `velo-code/public/validation-utils.js`
 **Deployment Status:** Ready for Wix deployment and testing
 
-### ✅ Completed Features
-- [x] Name field separation (first name + surname → full name)
+### âœ… Completed Features
+- [x] Name field separation (first name + surname â†’ full name)
 - [x] CEP-based address auto-fill (ViaCEP integration)
 - [x] Required field asterisks (*) display - matches gabineteonline style
 - [x] Portuguese validation messages
@@ -27,15 +31,15 @@
 ### 1.1 Philosophy
 - **Required fields get smart defaults** but remain user-editable
 - **Auto-fill reduces friction** without removing user agency
-- **Progressive disclosure** — show basic form first, expand on demand
+- **Progressive disclosure** â€” show basic form first, expand on demand
 - **Context-aware defaults** based on device/browser/location data
 
 ### 1.2 Auto-Fill Categories
 
 | Category | Fields | Strategy | Rationale |
 |----------|--------|----------|-----------|
-| **Name Fields** | `apelido`, `sobrenome` → `nome` | First name + surname → full name | Reduces redundant typing |
-| **Address Fields** | `cep` → auto-populate address | CEP lookup service | Users share full address willingly |
+| **Name Fields** | `apelido`, `sobrenome` â†’ `nome` | First name + surname â†’ full name | Reduces redundant typing |
+| **Address Fields** | `cep` â†’ auto-populate address | CEP lookup service | Users share full address willingly |
 | **Contact Fields** | `celular`, `email` | User input only (no auto-fill) | Allow international numbers/emails |
 
 ---
@@ -44,44 +48,44 @@
 
 ### 2.1 Required Fields (Always Visible)
 
-#### `apelido` — "Primeiro Nome"
+#### `apelido` â€” "Primeiro Nome"
 - **Auto-fill:** None (user enters first name)
 - **UX:** Input field, placeholder "Digite seu primeiro nome"
 - **Validation:** Required, 1-30 chars, letters only
 - **Notes:** Maps to gabineteonline `Apelido` (optional field)
 
-#### `sobrenome` — "Sobrenome"
+#### `sobrenome` â€” "Sobrenome"
 - **Auto-fill:** None (user enters surname)
 - **UX:** Input field, placeholder "Digite seu sobrenome"
 - **Validation:** Required, 1-200 chars, letters + spaces only
 - **Notes:** New field for surname separation
 
-#### `nome` — "Nome Completo *"
+#### `nome` â€” "Nome Completo *"
 - **Auto-fill:** `apelido` + `sobrenome` (joined with space)
-- **Logic:** When both fields change → combine into full name
+- **Logic:** When both fields change â†’ combine into full name
 - **UX:** Read-only display, updates automatically
 - **Validation:** Auto-generated, no manual validation needed
 - **Notes:** Maps to gabineteonline `Nome*` (required field)
 
-#### `celular` — "Celular *"
+#### `celular` â€” "Celular *"
 - **Auto-fill:** None (allow international numbers)
-- **UX:** Free-form input, placeholder "Digite seu número de celular"
+- **UX:** Free-form input, placeholder "Digite seu nÃºmero de celular"
 - **Validation:** Required, any phone format accepted
 - **Notes:** Primary lookup key for returning users
 
-#### `email` — "Email *"
+#### `email` â€” "Email *"
 - **Auto-fill:** Browser autofill (passive)
 - **UX:** Standard email input, browser suggestions enabled
 - **Validation:** Required, valid email format
 - **Notes:** Used for notifications (future feature)
 
-#### `cep` — "CEP *"
+#### `cep` â€” "CEP *"
 - **Auto-fill:** None (user enters CEP)
 - **UX:** Input field, placeholder "Digite seu CEP"
 - **Validation:** Required, CEP format (99999-999 or 99999999)
 - **Notes:** Triggers address auto-fill, required for complete registration
 
-#### `dataNascimento` — "Data de Nascimento *"
+#### `dataNascimento` â€” "Data de Nascimento *"
 - **Auto-fill:** None (privacy-sensitive)
 - **UX:** Date picker, placeholder "DD/MM/AAAA"
 - **Validation:** Required, valid date format, reasonable age range
@@ -101,10 +105,10 @@
 | `uf` | CEP lookup service | After CEP entered |
 
 #### Non-Auto-Fill Fields
-- `cpf`, `titulo`, `sessao` — Privacy-sensitive, manual entry only
-- `dataNascimento` — Privacy-sensitive, manual entry only
-- `telefone` — Redundant with celular, manual entry only
-- `observacao` — Free-form, no auto-fill possible
+- `cpf`, `titulo`, `sessao` â€” Privacy-sensitive, manual entry only
+- `dataNascimento` â€” Privacy-sensitive, manual entry only
+- `telefone` â€” Redundant with celular, manual entry only
+- `observacao` â€” Free-form, no auto-fill possible
 
 ---
 
@@ -112,7 +116,7 @@
 
 ### 3.1 Page Load (New User)
 ```
-1. Page loads → Show name fields: apelido, sobrenome, nome (auto-generated)
+1. Page loads â†’ Show name fields: apelido, sobrenome, nome (auto-generated)
 2. Show contact fields: celular (free-form), email
 3. "Mostrar mais campos" button for address fields
 4. All required fields have clear placeholders
@@ -121,57 +125,57 @@
 ### 3.2 Name Field Logic (Real-time)
 ```
 User types in apelido/sobrenome:
-├── apelido changes → Update nome: "[apelido] [sobrenome]"
-├── sobrenome changes → Update nome: "[apelido] [sobrenome]"
-├── Both filled → nome shows complete full name
+â”œâ”€â”€ apelido changes â†’ Update nome: "[apelido] [sobrenome]"
+â”œâ”€â”€ sobrenome changes â†’ Update nome: "[apelido] [sobrenome]"
+â”œâ”€â”€ Both filled â†’ nome shows complete full name
 ```
 
 ### 3.3 Phone Number Entry (Returning User Check)
 ```
-User types celular → onBlur event:
-├── Any format accepted (Brazilian or international)
-├── Clean number → Query Registros DB
-├── Found existing record?
-│   ├── YES → Show "Bem-vindo de volta, [apelido]!"
-│   │   ├── Display existing data (read-only)
-│   │   ├── "Atualizar dados" button → Expand to edit mode
-│   │   └── Direct WhatsApp link
-│   └── NO → Continue with registration form
+User types celular â†’ onBlur event:
+â”œâ”€â”€ Any format accepted (Brazilian or international)
+â”œâ”€â”€ Clean number â†’ Query Registros DB
+â”œâ”€â”€ Found existing record?
+â”‚   â”œâ”€â”€ YES â†’ Show "Bem-vindo de volta, [apelido]!"
+â”‚   â”‚   â”œâ”€â”€ Display existing data (read-only)
+â”‚   â”‚   â”œâ”€â”€ "Atualizar dados" button â†’ Expand to edit mode
+â”‚   â”‚   â””â”€â”€ Direct WhatsApp link
+â”‚   â””â”€â”€ NO â†’ Continue with registration form
 ```
 
 ### 3.4 CEP-Based Address Auto-Fill
 ```
-User enters CEP → onBlur event:
-├── Valid CEP format? → Call CEP lookup API
-├── API returns data?
-│   ├── YES → Auto-populate: endereco, numero, complemento, id_bairro, id_cidade, uf
-│   │   ├── Show populated fields for user review
-│   │   ├── User can edit any field if needed
-│   └── NO → Show manual address fields
+User enters CEP â†’ onBlur event:
+â”œâ”€â”€ Valid CEP format? â†’ Call CEP lookup API
+â”œâ”€â”€ API returns data?
+â”‚   â”œâ”€â”€ YES â†’ Auto-populate: endereco, numero, complemento, id_bairro, id_cidade, uf
+â”‚   â”‚   â”œâ”€â”€ Show populated fields for user review
+â”‚   â”‚   â”œâ”€â”€ User can edit any field if needed
+â”‚   â””â”€â”€ NO â†’ Show manual address fields
 ```
 
 ### 3.5 Progressive Disclosure
 ```
 Basic Form (always visible):
-┌─ Primeiro Nome ─┬─ Sobrenome ─┬─ Nome Completo ─┐
-│ [João]         │ [Silva]     │ [João Silva]    │ ← Auto-generated
-└────────────────┴─────────────┴─────────────────┘
-┌─ Celular ──────────────┬─ Email ──────────────┐
-│ [+55 21 99999-9999]    │ [joao@email.com]     │
-└────────────────────────┴──────────────────────┘
-┌─ [Mostrar endereço ▼] ─┐
-└─────────────────────────┘
+â”Œâ”€ Primeiro Nome â”€â”¬â”€ Sobrenome â”€â”¬â”€ Nome Completo â”€â”
+â”‚ [JoÃ£o]         â”‚ [Silva]     â”‚ [JoÃ£o Silva]    â”‚ â† Auto-generated
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+â”Œâ”€ Celular â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€ Email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ [+55 21 99999-9999]    â”‚ [joao@email.com]     â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+â”Œâ”€ [Mostrar endereÃ§o â–¼] â”€â”
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
 Expanded Form (address fields):
-┌─ CEP ──────┬─ Endereço ──────────────────────┐
-│ [12345-123]│ [Rua das Flores, 123]          │ ← Auto-filled from CEP
-├────────────┼─────────────────────────────────┤
-│ Número     │ Complemento                     │
-│ [123]      │ [Apto 45, bloco B]             │
-├────────────┼─────────────────────────────────┤
-│ Bairro     │ Cidade     │ UF                 │
-│ [Centro]   │ [Rio]      │ [RJ]               │ ← Auto-filled from CEP
-└────────────┴────────────┴────────────────────┘
+â”Œâ”€ CEP â”€â”€â”€â”€â”€â”€â”¬â”€ EndereÃ§o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ [12345-123]â”‚ [Rua das Flores, 123]          â”‚ â† Auto-filled from CEP
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ NÃºmero     â”‚ Complemento                     â”‚
+â”‚ [123]      â”‚ [Apto 45, bloco B]             â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ Bairro     â”‚ Cidade     â”‚ UF                 â”‚
+â”‚ [Centro]   â”‚ [Rio]      â”‚ [RJ]               â”‚ â† Auto-filled from CEP
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
@@ -340,7 +344,7 @@ $w('#nomeCompleto').onInput((event) => {
     
     if (!$w('#apelido').value) { // Only if user hasn't typed
         $w('#apelido').value = suggestedApelido;
-        $w('#apelido').placeholder = `Sugestão: ${suggestedApelido}`;
+        $w('#apelido').placeholder = `SugestÃ£o: ${suggestedApelido}`;
     }
 });
 ```
@@ -380,41 +384,41 @@ async function getBairrosForLocation(location) {
 const validationRules = {
     nomeCompleto: {
         required: true,
-        pattern: /^[a-zA-ZÀ-ÿ\s]+$/,
+        pattern: /^[a-zA-ZÃ€-Ã¿\s]+$/,
         minLength: 2,
         maxLength: 200,
-        message: 'Nome deve conter apenas letras e espaços'
+        message: 'Nome deve conter apenas letras e espaÃ§os'
     },
     apelido: {
         required: true,
-        pattern: /^[a-zA-ZÀ-ÿ\s]+$/,
+        pattern: /^[a-zA-ZÃ€-Ã¿\s]+$/,
         minLength: 1,
         maxLength: 30,
-        message: 'Primeiro nome é obrigatório (1-30 caracteres)'
+        message: 'Primeiro nome Ã© obrigatÃ³rio (1-30 caracteres)'
     },
     sobrenome: {
         required: true,
-        pattern: /^[a-zA-ZÀ-ÿ\s]+$/,
+        pattern: /^[a-zA-ZÃ€-Ã¿\s]+$/,
         minLength: 1,
         maxLength: 200,
-        message: 'Sobrenome é obrigatório (1-200 caracteres)'
+        message: 'Sobrenome Ã© obrigatÃ³rio (1-200 caracteres)'
     },
     nome: {
         required: true,
-        message: 'Nome completo é gerado automaticamente'
+        message: 'Nome completo Ã© gerado automaticamente'
     },
     celular: {
         required: true,
-        message: 'Celular é obrigatório'
+        message: 'Celular Ã© obrigatÃ³rio'
     },
     email: {
         required: true,
         pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        message: 'Email é obrigatório'
+        message: 'Email Ã© obrigatÃ³rio'
     },
     bairro: {
         required: true,
-        message: 'Bairro é obrigatório'
+        message: 'Bairro Ã© obrigatÃ³rio'
     }
 };
 ```
@@ -492,5 +496,5 @@ function setupValidation() {
 2. **Implement auto-fill logic** starting with phone area codes
 3. **Test phone lookup** with existing Registros data
 4. **Add progressive disclosure** for optional fields
-5. **Deploy via preview** and validate with journey agent</content>
-<parameter name="filePath">c:\Users\otavi\Documents\prova-ai\Updating-FlavioValle\docs\PARTICIPE_PAGE_AUTO_FILL_PLAN.md
+5. **Deploy via preview** and validate with journey agent
+

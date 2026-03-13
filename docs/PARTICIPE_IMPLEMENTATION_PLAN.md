@@ -1,3 +1,7 @@
+﻿> [!WARNING]
+> Superseded by `docs/PLAN_Participe_Deployment_V4.md` (2026-02-19) in the workspace root.
+> This document contains older assumptions and is kept only for historical reference.
+
 # Enhanced Participe Page Implementation Plan
 
 **Date:** February 13, 2026
@@ -5,19 +9,19 @@
 **Method:** Manual code injection via Wix Developer Mode
 **Focus:** Form enhancement with auto-fill and validation (no database backend yet)
 
-## 📋 Current State Analysis
+## ðŸ“‹ Current State Analysis
 
 ### Existing Participe Page Structure (from discovery)
-**Form 1 — Main Registration Form (`comp-m4wplov41`):**
+**Form 1 â€” Main Registration Form (`comp-m4wplov41`):**
 | # | Current Field | Type | Required | Current ID | Notes |
 |---|---------------|------|----------|------------|-------|
-| 1 | `nome` | text | ✅ | `nome` | Currently "Nome Completo" |
-| 2 | `sobrenome` | text | ✅ | `sobrenome` | Last name (already exists!) |
-| 3 | `email` | email | ✅ | `email` | Email address |
-| 4 | `phone` | tel | ✅ | `phone` | Maps to `celular` |
-| 5 | (checkbox) | checkbox | ❓ | `checkbox` | Purpose TBD |
-| 6 | `collection_comp-m6z7d0i3` | select | ✅ | `collection_comp-m6z7d0i3` | Bairro dropdown |
-| 7 | `textarea_comp-m4wplove4` | textarea | ❓ | `textarea_comp-m4wplove4` | Maps to `observacao` |
+| 1 | `nome` | text | âœ… | `nome` | Currently "Nome Completo" |
+| 2 | `sobrenome` | text | âœ… | `sobrenome` | Last name (already exists!) |
+| 3 | `email` | email | âœ… | `email` | Email address |
+| 4 | `phone` | tel | âœ… | `phone` | Maps to `celular` |
+| 5 | (checkbox) | checkbox | â“ | `checkbox` | Purpose TBD |
+| 6 | `collection_comp-m6z7d0i3` | select | âœ… | `collection_comp-m6z7d0i3` | Bairro dropdown |
+| 7 | `textarea_comp-m4wplove4` | textarea | â“ | `textarea_comp-m4wplove4` | Maps to `observacao` |
 
 **Key Discovery:** The page already has `nome` and `sobrenome` fields! We need to:
 - Rename `nome` to `apelido` (first name)
@@ -28,22 +32,22 @@
 
 ---
 
-## 🎯 Implementation Plan
+## ðŸŽ¯ Implementation Plan
 
-### Phase 1: Code Preparation ✅ COMPLETE
+### Phase 1: Code Preparation âœ… COMPLETE
 
-#### ✅ Files Ready for Injection
+#### âœ… Files Ready for Injection
 ```
 velo-code/
-├── participe.js (419 lines) - Main page logic
-├── public/
-│   ├── validation-utils.js (243 lines) - Validation rules
-│   ├── location-utils.js - CEP auto-fill
-│   └── text-utils.js - Name utilities
+â”œâ”€â”€ participe.js (419 lines) - Main page logic
+â”œâ”€â”€ public/
+â”‚   â”œâ”€â”€ validation-utils.js (243 lines) - Validation rules
+â”‚   â”œâ”€â”€ location-utils.js - CEP auto-fill
+â”‚   â””â”€â”€ text-utils.js - Name utilities
 ```
 
-#### ✅ Features Implemented
-- [x] Name separation: `apelido` + `sobrenome` → `nome` (full name)
+#### âœ… Features Implemented
+- [x] Name separation: `apelido` + `sobrenome` â†’ `nome` (full name)
 - [x] Required fields: `celular`, `email`, `cep`, `dataNascimento`
 - [x] CEP auto-fill for address fields
 - [x] Form validation with Portuguese messages
@@ -64,31 +68,31 @@ velo-code/
    - This enables Velo code editing
 
 3. **Navigate to Participe Page**
-   - Go to Pages panel → Select "participe"
+   - Go to Pages panel â†’ Select "participe"
 
 #### Step 2.2: Inject Public Utility Files
 ```
-Dev Mode Panel → Public & Backend → public/
+Dev Mode Panel â†’ Public & Backend â†’ public/
 ```
 
 **File 1: validation-utils.js**
-- Click "+" → Create new file → "validation-utils.js"
+- Click "+" â†’ Create new file â†’ "validation-utils.js"
 - Copy entire content from `velo-code/public/validation-utils.js`
 - Save
 
 **File 2: location-utils.js**
-- Click "+" → Create new file → "location-utils.js"
+- Click "+" â†’ Create new file â†’ "location-utils.js"
 - Copy entire content from `velo-code/public/location-utils.js`
 - Save
 
 **File 3: text-utils.js**
-- Click "+" → Create new file → "text-utils.js"
+- Click "+" â†’ Create new file â†’ "text-utils.js"
 - Copy entire content from `velo-code/public/text-utils.js`
 - Save
 
 #### Step 2.3: Inject Page Code
 ```
-Dev Mode Panel → Page Code → participe
+Dev Mode Panel â†’ Page Code â†’ participe
 ```
 
 - Select "participe" from page dropdown
@@ -100,7 +104,7 @@ Dev Mode Panel → Page Code → participe
 ### Phase 3: Form Structure Updates
 
 #### Step 3.1: Element ID Mapping
-**Current → Required Changes:**
+**Current â†’ Required Changes:**
 
 | Current Element | Current ID | New ID | Action |
 |----------------|------------|--------|--------|
@@ -140,12 +144,12 @@ Dev Mode Panel → Page Code → participe
 
 5. **Toggle Button**
    - Add button
-   - Label: "Mostrar mais campos ▼"
+   - Label: "Mostrar mais campos â–¼"
    - ID: `showMoreFields`
 
 #### Step 3.3: Update Button IDs
-- Main submit button → ID: `submitButton`
-- WhatsApp button → ID: `whatsappButton`
+- Main submit button â†’ ID: `submitButton`
+- WhatsApp button â†’ ID: `whatsappButton`
 
 ---
 
@@ -181,7 +185,7 @@ Code expects these element IDs to exist:
 1. **Click "Preview" in Wix Editor**
 2. **Test Core Functionality:**
    - [ ] Page loads without console errors
-   - [ ] Name combination works (apelido + sobrenome → nome)
+   - [ ] Name combination works (apelido + sobrenome â†’ nome)
    - [ ] Form validation shows Portuguese messages
    - [ ] CEP auto-fill populates address fields
    - [ ] Optional fields toggle visibility
@@ -223,34 +227,34 @@ Code expects these element IDs to exist:
 
 ---
 
-## 📋 Detailed Field Mapping
+## ðŸ“‹ Detailed Field Mapping
 
 ### Required Fields (Always Visible)
 | Field ID | Label | Type | Validation | Current Status |
 |----------|-------|------|------------|----------------|
 | `#apelido` | Primeiro Nome | text | Required, 1-30 chars | Rename from `#nome` |
-| `#sobrenome` | Sobrenome | text | Required, 1-200 chars | ✅ Already exists |
-| `#nome` | Nome Completo | text (read-only) | Auto-generated | ➕ Add new field |
+| `#sobrenome` | Sobrenome | text | Required, 1-200 chars | âœ… Already exists |
+| `#nome` | Nome Completo | text (read-only) | Auto-generated | âž• Add new field |
 | `#celular` | Celular | tel | Required, phone format | Rename from `#phone` |
-| `#email` | Email | email | Required, email format | ✅ Already exists |
-| `#cep` | CEP | text | Required, CEP format | ➕ Add new field |
-| `#dataNascimento` | Data de Nascimento | date | Required, DD/MM/YYYY | ➕ Add new field |
+| `#email` | Email | email | Required, email format | âœ… Already exists |
+| `#cep` | CEP | text | Required, CEP format | âž• Add new field |
+| `#dataNascimento` | Data de Nascimento | date | Required, DD/MM/YYYY | âž• Add new field |
 
 ### Optional Fields (Initially Hidden)
 | Field ID | Label | Type | Current Status |
 |----------|-------|------|----------------|
-| `#cpf` | CPF | text | ➕ Add to optional section |
-| `#endereco` | Endereço | text | ➕ Add to optional section |
-| `#numero` | Número | text | ➕ Add to optional section |
-| `#complemento` | Complemento | text | ➕ Add to optional section |
+| `#cpf` | CPF | text | âž• Add to optional section |
+| `#endereco` | EndereÃ§o | text | âž• Add to optional section |
+| `#numero` | NÃºmero | text | âž• Add to optional section |
+| `#complemento` | Complemento | text | âž• Add to optional section |
 | `#bairro` | Bairro | select | Rename from `#collection_comp-m6z7d0i3` |
-| `#cidade` | Cidade | text | ➕ Add to optional section |
-| `#uf` | Estado | select | ➕ Add to optional section |
-| `#observacao` | Observações | textarea | Rename from `#textarea_comp-m4wplove4` |
+| `#cidade` | Cidade | text | âž• Add to optional section |
+| `#uf` | Estado | select | âž• Add to optional section |
+| `#observacao` | ObservaÃ§Ãµes | textarea | Rename from `#textarea_comp-m4wplove4` |
 
 ---
 
-## 🔧 Code Injection Checklist
+## ðŸ”§ Code Injection Checklist
 
 ### Pre-Injection
 - [x] All code files prepared
@@ -274,7 +278,7 @@ Code expects these element IDs to exist:
 
 ---
 
-## ⚠️ Risk Mitigation
+## âš ï¸ Risk Mitigation
 
 ### Rollback Plan
 1. **Immediate Rollback:** Remove injected code files
@@ -291,7 +295,7 @@ Code expects these element IDs to exist:
 
 ---
 
-## 📊 Success Metrics
+## ðŸ“Š Success Metrics
 
 ### Functional Success
 - [ ] Form loads without errors
@@ -308,7 +312,7 @@ Code expects these element IDs to exist:
 
 ---
 
-## 🎯 Next Steps
+## ðŸŽ¯ Next Steps
 
 1. **Execute Phase 2:** Access Wix Developer Mode and inject code files
 2. **Execute Phase 3:** Update form structure and element IDs
@@ -318,7 +322,7 @@ Code expects these element IDs to exist:
 
 ---
 
-## 📞 Support
+## ðŸ“ž Support
 
 **Implementation Guide:** This plan provides step-by-step instructions for manual code injection.
 
@@ -330,10 +334,11 @@ Code expects these element IDs to exist:
 
 ---
 
-## 📋 Change Log
+## ðŸ“‹ Change Log
 
 | Date | Change | Status |
 |------|--------|--------|
-| 2026-02-13 | Created detailed implementation plan based on discovery | ✅ Ready for execution |
-| 2026-02-13 | Documented existing form structure and required changes | ✅ Complete |
-| 2026-02-13 | Added step-by-step injection process | ✅ Complete |
+| 2026-02-13 | Created detailed implementation plan based on discovery | âœ… Ready for execution |
+| 2026-02-13 | Documented existing form structure and required changes | âœ… Complete |
+| 2026-02-13 | Added step-by-step injection process | âœ… Complete |
+

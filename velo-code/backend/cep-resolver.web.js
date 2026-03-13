@@ -1,0 +1,50 @@
+// backend/cep-resolver.web.js - V4 CEP resolver (web module)
+import { fetch } from 'wix-fetch';
+import { Permissions, webMethod } from 'wix-web-module';
+
+export const resolveCep = webMethod(Permissions.Anyone, async (cep) => {
+    const cleanCep = sanitizeCep(cep);
+
+    if (cleanCep.length !== 8) {
+        throw new Error('CEP invalido. Informe 8 digitos.');
+    }
+
+    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`, {
+        method: 'GET',
+        headers: {
+            Accept: 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Falha ao consultar CEP (${response.status}).`);
+    }
+
+    const data = await response.json();
+
+    if (data.erro) {
+        throw new Error('CEP nao encontrado.');
+    }
+
+    const payload = {
+        cep: formatCep(cleanCep),
+        rua: String(data.logradouro || '').trim(),
+        cidade: String(data.localidade || '').trim(),
+        uf: String(data.uf || '').trim(),
+        bairro: String(data.bairro || '').trim()
+    };
+
+    if (!payload.rua || !payload.cidade) {
+        throw new Error('CEP nao retornou rua e cidade validas.');
+    }
+
+    return payload;
+});
+
+function sanitizeCep(value) {
+    return String(value || '').replace(/\D/g, '');
+}
+
+function formatCep(cleanCep) {
+    return `${cleanCep.slice(0, 5)}-${cleanCep.slice(5, 8)}`;
+}
